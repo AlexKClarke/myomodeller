@@ -5,10 +5,10 @@ import torch.nn as nn
 import torch.optim as optim
 
 sys.path.append(os.path.abspath(""))
-from data.mnist import get_64_mnist
-from data.preprocessing import get_standardised_library
+from mnist import get_mnist_library
 from networks.blocks import MLPBlock, Conv1dBlock, Conv2dBlock
-from training.models import SupervisedLearner
+from training.modules import CoreModule
+from data.loaders import TensorLoader
 from visual.plotters import plot_tracker
 
 if __name__ == "__main__":
@@ -35,15 +35,19 @@ if __name__ == "__main__":
         treat_height_as_channel = False
         flatten_features = False
 
-    # get mnist data, split into train/valid/test data and z-score standardise
-    images, targets = get_64_mnist(
-        treat_height_as_channel=treat_height_as_channel,
-        flatten_features=flatten_features,
+    # Get an mnist library
+    library = get_mnist_library(
+        data_splits=[0.6, 0.8],
+        one_hot_targets=True,
+        treat_height_as_channel=False,
+        flatten_features=False,
     )
-    library = get_standardised_library(images, targets, data_splits=[0.6, 0.8])
+
+    # Convert the Library to a lightning dataloader
+    # loader = TensorLoader(train_data=)
 
     # Initialise model with data, architecture and optimiser - then train
-    model = SupervisedLearner(
+    module = CoreModule(
         network=architecture(
             input_shape=library["train_data"].shape[1:],
             output_shape=library["train_targets"].shape[1:],
