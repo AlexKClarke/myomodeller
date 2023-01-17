@@ -126,7 +126,9 @@ class Conv1dBlock(nn.Module):
 
         in_channel = input_shape[0]
         for out_channel, kernel_size, stride in params_per_layer:
-            self.block.append(nn.Conv1d(in_channel, out_channel, kernel_size, stride))
+            self.block.append(
+                nn.Conv1d(in_channel, out_channel, kernel_size, stride)
+            )
             self.block.append(nn.ReLU())
             if use_batch_norm:
                 self.block.append(nn.BatchNorm1d(out_channel))
@@ -202,7 +204,10 @@ class ConvTranspose1dBlock(nn.Module):
             stride_per_layer = [stride_per_layer] * num_layers
 
         kern_stride_per_layer = list(
-            zip(cast(Iterable, kernel_size_per_layer), cast(Iterable, stride_per_layer))
+            zip(
+                cast(Iterable, kernel_size_per_layer),
+                cast(Iterable, stride_per_layer),
+            )
         )
 
         time_dim = [output_shape[1]]
@@ -309,7 +314,9 @@ class Conv2dBlock(nn.Module):
             ] * num_layers
 
         if type(stride_per_layer) == int:
-            stride_per_layer = [(stride_per_layer, stride_per_layer)] * num_layers
+            stride_per_layer = [
+                (stride_per_layer, stride_per_layer)
+            ] * num_layers
 
         params_per_layer = list(
             zip(
@@ -329,7 +336,9 @@ class Conv2dBlock(nn.Module):
 
         in_channel = input_shape[0]
         for out_channel, kernel_size, stride in params_per_layer:
-            self.block.append(nn.Conv2d(in_channel, out_channel, kernel_size, stride))
+            self.block.append(
+                nn.Conv2d(in_channel, out_channel, kernel_size, stride)
+            )
             self.block.append(nn.ReLU())
             if use_batch_norm:
                 self.block.append(nn.BatchNorm2d(out_channel))
@@ -404,10 +413,15 @@ class ConvTranspose2dBlock(nn.Module):
             ] * num_layers
 
         if type(stride_per_layer) == int:
-            stride_per_layer = [(stride_per_layer, stride_per_layer)] * num_layers
+            stride_per_layer = [
+                (stride_per_layer, stride_per_layer)
+            ] * num_layers
 
         kern_stride_per_layer = list(
-            zip(cast(Iterable, kernel_size_per_layer), cast(Iterable, stride_per_layer))
+            zip(
+                cast(Iterable, kernel_size_per_layer),
+                cast(Iterable, stride_per_layer),
+            )
         )
 
         h_dim, w_dim = [output_shape[1]], [output_shape[2]]
@@ -423,7 +437,10 @@ class ConvTranspose2dBlock(nn.Module):
             current_w_dim = ((w_dim[i] - 1) * stride[1]) + kernel_size[1]
             target_w_dim = w_dim[i + 1]
             output_padding_per_layer.append(
-                [(target_h_dim - current_h_dim), (target_w_dim - current_w_dim)]
+                [
+                    (target_h_dim - current_h_dim),
+                    (target_w_dim - current_w_dim),
+                ]
             )
 
         params_per_layer = list(

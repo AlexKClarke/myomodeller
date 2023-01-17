@@ -10,8 +10,7 @@ from networks.sparse import (
     Conv1dSparseAutoencoder,
     Conv2dSparseAutoencoder,
 )
-from data.mnist import get_64_mnist
-from data.preprocessing import get_standardised_library
+from mnist import get_mnist_library
 from visual.plotters import plot_tracker, plot_images, plot_latents
 from training.models import SparseAutoencoderLearner
 
@@ -42,11 +41,12 @@ if __name__ == "__main__":
         flatten_features = False
 
     # get mnist data, split into train/valid/test data and z-score standardise
-    images, targets = get_64_mnist(
-        treat_height_as_channel=treat_height_as_channel,
-        flatten_features=flatten_features,
+    library = get_mnist_library(
+        data_splits=[0.6, 0.8],
+        one_hot_targets=True,
+        treat_height_as_channel=False,
+        flatten_features=False,
     )
-    library = get_standardised_library(images, targets, data_splits=[0.6, 0.8])
 
     # Initialise model with data, architecture and optimiser - then train
     model = SparseAutoencoderLearner(
