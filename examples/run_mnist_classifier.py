@@ -7,7 +7,6 @@ if os.path.basename(os.getcwd()) != "pyrepo":
     os.chdir("..")
 sys.path.append(os.path.abspath(""))
 
-import sys
 import torch
 import pytorch_lightning as pl
 from sklearn.datasets import load_digits
