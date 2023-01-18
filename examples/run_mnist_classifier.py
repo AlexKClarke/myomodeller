@@ -1,12 +1,17 @@
 """Example of training a 2D convolutional neural network to classify 
 8x8 MNIST images"""
 
-import os
+import os, sys
+
+if os.path.basename(os.getcwd()) != "pyrepo":
+    os.chdir("..")
+sys.path.append(os.path.abspath(""))
+
+import sys
 import torch
 import pytorch_lightning as pl
 from sklearn.datasets import load_digits
 
-os.chdir("..")
 from training.loaders import TensorLoader
 from training.utils import (
     get_split_indices,
@@ -15,10 +20,6 @@ from training.utils import (
 )
 from training.modules import CoreModule
 from networks.blocks import Conv2dBlock
-
-# from training.modules import CoreModule
-# from data.loaders import TensorLoader
-# from visual.plotters import plot_tracker
 
 if __name__ == "__main__":
 
@@ -71,7 +72,7 @@ if __name__ == "__main__":
     # Specify the lightning module
     model = CoreModule(
         network=network,
-        loss_fn=torch.nn.CrossEntropyLoss,
+        loss_fn=torch.nn.CrossEntropyLoss(),
         optimiser=torch.optim.Adam,
     )
 
