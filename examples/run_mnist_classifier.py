@@ -1,76 +1,80 @@
-import sys
+"""Example of training a 2D convolutional neural network to classify 
+8x8 MNIST images"""
+
 import os
 import torch
-import torch.nn as nn
-import torch.optim as optim
+import pytorch_lightning as pl
+from sklearn.datasets import load_digits
 
-sys.path.append(os.path.abspath(""))
-from mnist import get_mnist_library
-from networks.blocks import MLPBlock, Conv1dBlock, Conv2dBlock
+os.chdir("..")
+from training.loaders import TensorLoader
+from training.utils import (
+    get_split_indices,
+    split_array_by_indices,
+    array_to_tensor,
+)
 from training.modules import CoreModule
-from data.loaders import TensorLoader
-from visual.plotters import plot_tracker
+from networks.blocks import Conv2dBlock
+
+# from training.modules import CoreModule
+# from data.loaders import TensorLoader
+# from visual.plotters import plot_tracker
 
 if __name__ == "__main__":
 
-    # select neural network architecture & number of neurons/filters per layer
-    architecture = Conv2dBlock
-    out_chans_per_layer = [64, 32, 16]
+    # Load MNIST digits from scikit.datasets
+    # sklearn flattens the images for some reason so also need to reshape
+    images, targets = load_digits(return_X_y=True)
+    images = images.reshape((images.shape[0], 1, 8, 8))
 
-    # set parameters of model training
-    learning_rate = 0.001
-    batch_size = 64
-
-    # modify MNIST dimensions based on architecture
-    # Simple MLPs operate on batch x feature
-    # Conv1ds operate on batch x channels x time
-    # Conv2ds operate on batch x channels x height x width
-    if architecture == MLPBlock:
-        treat_height_as_channel = False
-        flatten_features = True
-    elif architecture == Conv1dBlock:
-        treat_height_as_channel = True
-        flatten_features = False
-    elif architecture == Conv2dBlock:
-        treat_height_as_channel = False
-        flatten_features = False
-
-    # Get an mnist library
-    library = get_mnist_library(
-        data_splits=[0.6, 0.8],
-        one_hot_targets=True,
-        treat_height_as_channel=False,
-        flatten_features=False,
+    # Split out train, val and test sets
+    train_data, test_data = split_array_by_indices(
+        (images, targets), get_split_indices(targets)
+    )
+    train_data, val_data = split_array_by_indices(
+        train_data, get_split_indices(train_data[1])
     )
 
-    # Convert the Library to a lightning dataloader
-    # loader = TensorLoader(train_data=)
+    # Convert the numpy arrays to torch tensors and break up lists
+    (
+        [train_images, train_targets],
+        [val_images, val_targets],
+        [test_images, test_targets],
+    ) = [array_to_tensor(data) for data in [train_data, val_data, test_data]]
 
-    # Initialise model with data, architecture and optimiser - then train
-    module = CoreModule(
-        network=architecture(
-            input_shape=library["train_data"].shape[1:],
-            output_shape=library["train_targets"].shape[1:],
-            out_chans_per_layer=out_chans_per_layer,
-            output_activation=nn.Sigmoid,
-        ),
-        loss_function=nn.BCELoss(),
-        optimiser=optim.Adam,
-        optimiser_kwargs={"lr": learning_rate},
-        train_data=library["train_data"],
-        train_targets=library["train_targets"],
-        valid_data=library["valid_data"],
-        valid_targets=library["valid_targets"],
-        batch_size=batch_size,
+    # Z-score standardise image sets with statistics from train set
+    mean, std = train_images.mean(), train_images.std()
+    [train_images, val_images, test_images] = [
+        ((images - mean) / std)
+        for images in [train_images, val_images, test_images]
+    ]
+
+    # Add all images and associated targets to the dataloader
+    loader = TensorLoader(
+        train_data=train_images,
+        train_targets=train_targets,
+        val_data=val_images,
+        val_targets=val_targets,
+        test_data=test_images,
+        test_targets=test_targets,
+        batch_size=64,
     )
-    tracker = model.fit()
 
-    # Plot training and validation curves
-    plot_tracker(tracker)
+    # Construct the neural network, in this case a 2d conv block
+    network = Conv2dBlock(
+        input_shape=[1, 8, 8],
+        output_shape=[10],
+        out_chans_per_layer=[32, 64],
+        output_activation=None,
+    ).to(dtype=train_images.dtype)
 
-    # Get prediction on test data and output accuracy
-    prediction = model.predict(library["test_data"]).argmax(1)
-    target = library["test_targets"].argmax(1)
-    accuracy = 100 * torch.count_nonzero(prediction == target) / target.numel()
-    print("\nAccuracy on test data is %d%%." % accuracy.detach())
+    # Specify the lightning module
+    model = CoreModule(
+        network=network,
+        loss_fn=torch.nn.CrossEntropyLoss,
+        optimiser=torch.optim.Adam,
+    )
 
+    # Construct the lightning trainer and fit
+    trainer = pl.Trainer()
+    trainer.fit(model=model, datamodule=loader)

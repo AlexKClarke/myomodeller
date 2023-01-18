@@ -15,24 +15,23 @@ class MLPBlock(nn.Module):
         use_batch_norm: bool = True,
         output_activation: Optional[Type[nn.Module]] = None,
     ):
-        """Builds a number of linear layers 
+        """Builds a number of linear layers
 
-            Args:
-            input_shape (Sequence[int]): 
-                The input shape of a data sample - [..., Feature]
-                (Linear layers operate on the final dimension)
-            output_shape (Sequence[int]):
-                The output shape of the data - [Batch, ..., Feature]
-                (Ignores the batch number)
-            out_chans_per_layer (List[int]): 
-                Number of hidden channels per layer, for example
-                [64, 32] would give two layers of hidden channel 64 then 32
-            use_batch_norm (bool, optional): 
-                Whether to batch norm after each linear layer
-                Defaults to True.
-            output_activation (Optional[Type[nn.Module]], optional): 
-                Allows an nn activation to be added to end of block
-                Defaults to None.
+        Args:
+        input_shape (Sequence[int]):
+            The input shape of a data sample - [..., Feature]
+            (Linear layers operate on the final dimension)
+        output_shape (Sequence[int]):
+            The desired output shape of the data
+        out_chans_per_layer (List[int]):
+            Number of hidden channels per layer, for example
+            [64, 32] would give two layers of hidden channel 64 then 32
+        use_batch_norm (bool, optional):
+            Whether to batch norm after each linear layer
+            Defaults to True.
+        output_activation (Optional[Type[nn.Module]], optional):
+            Allows an nn activation to be added to end of block
+            Defaults to None.
         """
         super().__init__()
 
@@ -75,27 +74,27 @@ class Conv1dBlock(nn.Module):
         to desired output shape
 
         Args:
-            input_shape (Sequence[int]): 
+            input_shape (Sequence[int]):
                 The input shape of the data - [Channel, Time]
             output_shape (Sequence[int]):
-                The output shape of the data - [Channel, Time]
-            out_chans_per_layer (List[int]): 
+                The desired output shape of the data
+            out_chans_per_layer (List[int]):
                 Number of hidden channels per layer, for example
                 [64, 32] would give two layers of hidden channel 64 then 32
-            kernel_size_per_layer (Union[int, List[int]], optional): 
-                Size of the conv1d kernel 
+            kernel_size_per_layer (Union[int, List[int]], optional):
+                Size of the conv1d kernel
                 Can be set as a list of same length as kernel_size_per_layer
                 or as an int (in which case the same value will be used for each layer)
                 Defaults to 5.
             stride_per_layer (Union[int, List[int]], optional):
-                Size of the conv1d stride 
+                Size of the conv1d stride
                 Can be set as a list of same length as kernel_size_per_layer
                 or as an int (in which case the same value will be used for each layer)
                 Defaults to 1.
             use_batch_norm (bool, optional):
                 Whether to batch norm after each conv1d
                 Defaults to True.
-            output_activation (Optional[Type[nn.Module]], optional): 
+            output_activation (Optional[Type[nn.Module]], optional):
                 Allows an nn activation to be added to end of block
                 Defaults to None.
         """
@@ -160,36 +159,36 @@ class ConvTranspose1dBlock(nn.Module):
         stride_per_layer: Union[int, List[int]] = 1,
         use_batch_norm: bool = True,
     ):
-        """Complement class to Conv1d block that reverses its 
+        """Complement class to Conv1d block that reverses its
         operations with transpose layers.
 
         Args:
-            input_shape (Sequence[int]): 
+            input_shape (Sequence[int]):
                 The input shape of the data - [Channel, Time]
             output_shape (Sequence[int]):
-                The output shape of the data - [Channel, Time]
+                The output shape of the data
             linear_out_chan (int)
                 The output channel size of the linear layer. As the Conv1DBlock
-                has a linear layer at the end, we need the output 
-                shape if the time dimension of the input is to match that of 
+                has a linear layer at the end, we need the output
+                shape if the time dimension of the input is to match that of
                 the output. This is usually the size of the final conv1d out chan
-            out_chans_per_layer (List[int]): 
+            out_chans_per_layer (List[int]):
                 Number of hidden channels per layer, for example
                 [32, 64] would give two layers of hidden channel 32 then 64
-            kernel_size_per_layer (Union[int, List[int]], optional): 
-                Size of the conv1d kernel 
+            kernel_size_per_layer (Union[int, List[int]], optional):
+                Size of the conv1d kernel
                 Can be set as a list of same length as kernel_size_per_layer
                 or as an int (in which case the same value will be used for each layer)
                 Defaults to 5.
             stride_per_layer (Union[int, List[int]], optional):
-                Size of the conv1d stride 
+                Size of the conv1d stride
                 Can be set as a list of same length as kernel_size_per_layer
                 or as an int (in which case the same value will be used for each layer)
                 Defaults to 1.
             use_batch_norm (bool, optional):
                 Whether to batch norm after each conv1d
                 Defaults to True.
-            output_activation (Optional[Type[nn.Module]], optional): 
+            output_activation (Optional[Type[nn.Module]], optional):
                 Allows an nn activation to be added to end of block
                 Defaults to None.
         """
@@ -276,32 +275,32 @@ class Conv2dBlock(nn.Module):
         output_activation: Optional[Type[nn.Module]] = None,
     ):
         """Builds a number of conv2d layers and then flattens with linear layer
-            to desired output shape
+        to desired output shape
 
-            Args:
-            input_shape (Sequence[int]): 
-                The input shape of the data - [Channel, Height, Width]
-            output_shape (Sequence[int]):
-                The output shape of the data - [Channel, Height, Width]
-            out_chans_per_layer (List[int]): 
-                Number of hidden channels per layer, for example
-                [64, 32] would give two layers of hidden channel 64 then 32
-            kernel_size_per_layer (Union[int, List[int]], optional): 
-                Size of the conv2d kernel (height and width)
-                Can be set as a list of (H, W) tuples of same length as kernel_size_per_layer
-                or as an int (in which case the same value will be used for each layer)
-                Defaults to 5.
-            stride_per_layer (Union[int, List[int]], optional):
-                Size of the conv2d stride (height and width)
-                Can be set as a list of (H, W) tuples of same length as kernel_size_per_layer
-                or as an int (in which case the same value will be used for each layer)
-                Defaults to 1.
-            use_batch_norm (bool, optional): 
-                Whether to batch norm after each conv2d
-                Defaults to True.
-            output_activation (Optional[Type[nn.Module]], optional): 
-                Allows an nn activation to be added to end of block
-                Defaults to None.
+        Args:
+        input_shape (Sequence[int]):
+            The input shape of the data - [Channel, Height, Width]
+        output_shape (Sequence[int]):
+            The desired output shape of the data
+        out_chans_per_layer (List[int]):
+            Number of hidden channels per layer, for example
+            [64, 32] would give two layers of hidden channel 64 then 32
+        kernel_size_per_layer (Union[int, List[int]], optional):
+            Size of the conv2d kernel (height and width)
+            Can be set as a list of (H, W) tuples of same length as kernel_size_per_layer
+            or as an int (in which case the same value will be used for each layer)
+            Defaults to 5.
+        stride_per_layer (Union[int, List[int]], optional):
+            Size of the conv2d stride (height and width)
+            Can be set as a list of (H, W) tuples of same length as kernel_size_per_layer
+            or as an int (in which case the same value will be used for each layer)
+            Defaults to 1.
+        use_batch_norm (bool, optional):
+            Whether to batch norm after each conv2d
+            Defaults to True.
+        output_activation (Optional[Type[nn.Module]], optional):
+            Allows an nn activation to be added to end of block
+            Defaults to None.
         """
 
         super().__init__()
@@ -370,23 +369,23 @@ class ConvTranspose2dBlock(nn.Module):
         stride_per_layer: Union[int, List[Tuple[int, int]]] = 1,
         use_batch_norm: bool = True,
     ):
-        """Complement class to Conv2d block that reverses its 
+        """Complement class to Conv2d block that reverses its
         operations with transpose layers.
 
         Args:
-            input_shape (Sequence[int]): 
+            input_shape (Sequence[int]):
                 The input shape of the data - [Channel, Height, Width]
             output_shape (Sequence[int]):
                 The output shape of the data - [Channel, Height, Width]
             linear_out_chan (int)
                 The output channel size of the linear layer. As the Conv2DBlock
-                has a linear layer at the end, we need the output 
-                shape if the time dimension of the input is to match that of 
+                has a linear layer at the end, we need the output
+                shape if the time dimension of the input is to match that of
                 the output. This is usually the size of the final conv1d out chan
-            out_chans_per_layer (List[int]): 
+            out_chans_per_layer (List[int]):
                 Number of hidden channels per layer, for example
                 [32, 64] would give two layers of hidden channel 32 then 64
-            kernel_size_per_layer (Union[int, List[int]], optional): 
+            kernel_size_per_layer (Union[int, List[int]], optional):
                 Size of the conv2d kernel (height and width)
                 Can be set as a list of (H, W) tuples of same length as kernel_size_per_layer
                 or as an int (in which case the same value will be used for each layer)
@@ -396,10 +395,10 @@ class ConvTranspose2dBlock(nn.Module):
                 Can be set as a list of (H, W) tuples of same length as kernel_size_per_layer
                 or as an int (in which case the same value will be used for each layer)
                 Defaults to 1.
-            use_batch_norm (bool, optional): 
+            use_batch_norm (bool, optional):
                 Whether to batch norm after each conv2d
                 Defaults to True.
-            output_activation (Optional[Type[nn.Module]], optional): 
+            output_activation (Optional[Type[nn.Module]], optional):
                 Allows an nn activation to be added to end of block
                 Defaults to None.
         """
@@ -484,4 +483,3 @@ class ConvTranspose2dBlock(nn.Module):
         for layer in self.block:
             x = layer(x)
         return x
-
