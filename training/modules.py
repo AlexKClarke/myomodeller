@@ -1,47 +1,54 @@
 from typing import Dict, Optional
 
-from pytorch_lightning import LightningModule
+import torch
+from training.core import CoreModule
 
 
-class CoreModule(LightningModule):
+class SupervisedClassifier(CoreModule):
+    """A module that trains a network to classify using supervised learning,
+    with accuracy as the validation target."""
+
     def __init__(
         self,
         network,
-        loss_fn,
-        optimiser,
-        optimiser_kwargs: Optional[Dict] = None,
+        loss_fn=torch.nn.CrossEntropyLoss(),
+        dirpath: Optional[str] = None,
+        filename: Optional[str] = None,
+        optimizer=torch.optim.AdamW,
+        optimizer_kwargs: Optional[Dict] = None,
+        lr_scheduler_kwargs: Optional[Dict] = None,
+        early_stopping_kwargs: Optional[Dict] = None,
     ):
-        super().__init__()
-        self.network = network
+        maximize_val_target = True
+
+        super().__init__(
+            network,
+            dirpath,
+            filename,
+            maximize_val_target,
+            optimizer,
+            optimizer_kwargs,
+            lr_scheduler_kwargs,
+            early_stopping_kwargs,
+        )
+
         self.loss_fn = loss_fn
-
-        self.optimiser = optimiser
-        if optimiser_kwargs is None:
-            self.optimiser_kwargs = {}
-        else:
-            self.optimiser_kwargs = optimiser_kwargs
-
-    def forward(self, x):
-        return self.network(x)
-
-    def configure_optimizers(self):
-        return self.optimiser(self.parameters(), **self.optimiser_kwargs)
 
     def training_step(self, batch, batch_idx):
         x, y_target = batch
         y_predict = self(x)
         loss = self.loss_fn(y_predict, y_target)
-        self.log_dict = {"train_loss": loss}
+        self.log("train_loss", loss)
         return loss
 
     def validation_step(self, batch, batch_idx):
         x, y_target = batch
         y_predict = self(x)
-        loss = self.loss_fn(y_predict, y_target)
-        self.log_dict = {"val_loss": loss}
+        accuracy = (y_predict.argmax(dim=-1) == y_target).float().mean()
+        self.log("val_target", accuracy)
 
     def test_step(self, batch, batch_idx):
         x, y_target = batch
         y_predict = self(x)
-        loss = self.loss_fn(y_predict, y_target)
-        self.log_dict = {"train_loss": loss}
+        accuracy = (y_predict.argmax(dim=-1) == y_target).float().mean()
+        self.log("test_accuracy", accuracy)

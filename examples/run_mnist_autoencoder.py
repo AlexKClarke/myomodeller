@@ -1,96 +1,87 @@
-import sys
-import os
-import torch
-import torch.nn as nn
-import torch.optim as optim
+"""Example of training a 2D convolutional neural network to classify 
+8x8 MNIST images"""
 
+import os, sys
+
+if os.path.basename(os.getcwd()) != "pyrepo":
+    os.chdir("..")
 sys.path.append(os.path.abspath(""))
-from networks.sparse import (
-    MLPSparseAutoencoder,
-    Conv1dSparseAutoencoder,
-    Conv2dSparseAutoencoder,
-)
-from mnist import get_mnist_library
-from visual.plotters import plot_tracker, plot_images, plot_latents
-from training.models import SparseAutoencoderLearner
 
+import torch
+from pytorch_lightning import Trainer
+from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+from sklearn.datasets import load_digits
+
+from training.loaders import TensorLoader
+from training.utils import (
+    get_split_indices,
+    split_array_by_indices,
+    array_to_tensor,
+)
+from training.modules import ClassifierModule
+from networks.blocks import Conv2dBlock
 
 if __name__ == "__main__":
 
-    # select neural network architecture & number of neurons/filters per layer
-    architecture = Conv2dSparseAutoencoder
-    out_chans_per_layer = [64, 32]
-    sparse_dim = 2
+    # Load MNIST digits from scikit.datasets
+    # sklearn flattens the images for some reason so also need to reshape
+    images, targets = load_digits(return_X_y=True)
+    images, targets = images.astype("float32"), targets.astype("int64")
+    images = images.reshape((images.shape[0], 1, 8, 8))
 
-    # set parameters of model training
-    learning_rate = 0.001
-    batch_size = 64
-
-    # modify MNIST dimensions based on architecture
-    # Simple MLPs operate on batch x feature
-    # Conv1ds operate on batch x channels x time
-    # Conv2ds operate on batch x channels x height x width
-    if architecture == MLPSparseAutoencoder:
-        treat_height_as_channel = False
-        flatten_features = True
-    elif architecture == Conv1dSparseAutoencoder:
-        treat_height_as_channel = True
-        flatten_features = False
-    elif architecture == Conv2dSparseAutoencoder:
-        treat_height_as_channel = False
-        flatten_features = False
-
-    # get mnist data, split into train/valid/test data and z-score standardise
-    library = get_mnist_library(
-        data_splits=[0.6, 0.8],
-        one_hot_targets=True,
-        treat_height_as_channel=False,
-        flatten_features=False,
+    # Split out train, val and test sets
+    train_data, test_data = split_array_by_indices(
+        (images, targets), get_split_indices(targets)
+    )
+    train_data, val_data = split_array_by_indices(
+        train_data, get_split_indices(train_data[1])
     )
 
-    # Initialise model with data, architecture and optimiser - then train
-    model = SparseAutoencoderLearner(
-        network=architecture(
-            input_shape=library["train_data"].shape[1:],
-            output_shape=library["train_data"].shape[1:],
-            sparse_dim=sparse_dim,
-            out_chans_per_layer=out_chans_per_layer,
-        ),
-        loss_function=nn.MSELoss(),
-        optimiser=optim.Adam,
-        optimiser_kwargs={"lr": learning_rate},
-        train_data=library["train_data"],
-        train_targets=library["train_data"],
-        valid_data=library["valid_data"],
-        valid_targets=library["valid_data"],
-        batch_size=batch_size,
+    # Convert the numpy arrays to torch tensors and break up lists
+    (
+        [train_images, train_targets],
+        [val_images, val_targets],
+        [test_images, test_targets],
+    ) = [array_to_tensor(data) for data in [train_data, val_data, test_data]]
+
+    # Z-score standardise image sets with statistics from train set
+    mean, std = train_images.mean(), train_images.std()
+    [train_images, val_images, test_images] = [
+        ((images - mean) / std)
+        for images in [train_images, val_images, test_images]
+    ]
+
+    # Add all images and associated targets to the dataloader
+    loader = TensorLoader(
+        train_data=train_images,
+        train_targets=train_targets,
+        val_data=val_images,
+        val_targets=val_targets,
+        test_data=test_images,
+        test_targets=test_targets,
+        batch_size=64,
     )
-    tracker = model.fit()
 
-    # Plot training and validation curves
-    plot_tracker(tracker)
+    # Construct the neural network, in this case a 2d conv block
+    network = Conv2dBlock(
+        input_shape=[1, 8, 8],
+        output_shape=[10],
+        out_chans_per_layer=[32, 64],
+        output_activation=None,
+    )
 
-    # Get prediction on test data and output accuracy
-    prediction = model.predict(library["test_data"])
-    target = library["test_data"]
-    error = (prediction - target).square().mean()
-    print("\nSelf-prediction error on test data is %f." % error.numpy())
+    # Specify the lightning module
+    model = ClassifierModule(network)
 
-    # Plot randomly selected prediction next to actual image
-    select = int(torch.randint(prediction.shape[0], (1,)))
+    # Build the trainer with the callback
+    trainer = Trainer(
+        accelerator="gpu",
+        devices=1,
+        max_epochs=100,
+    )
 
-    def pop(x, select):
-        return x.split((select, 1, x.shape[0] - select - 1))[1]
+    # Fit the model with the dataloader
+    trainer.fit(model=model, datamodule=loader)
 
-    single_pred_image = pop(prediction, select).squeeze()
-    single_target_image = pop(target, select).squeeze()
-    if architecture == MLPSparseAutoencoder:
-        single_pred_image = single_pred_image.reshape((8, 8))
-        single_target_image = single_target_image.reshape((8, 8))
-    plot_images(single_pred_image.numpy(), single_target_image.numpy())
-
-    # Get latents across train dataset and plot by digit class
-    # (data dimension reduction by t-sne if more than 2)
-    latents = model.predict_sparse_encoding(library["train_data"]).numpy()
-    labels = torch.argmax(library["train_targets"], dim=1).numpy()
-    plot_latents(latents, labels)
+    # Print the accuracy of the trained model on the test set
+    trainer.test(model=model, dataloaders=loader)

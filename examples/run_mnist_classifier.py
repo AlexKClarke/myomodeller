@@ -8,7 +8,7 @@ if os.path.basename(os.getcwd()) != "pyrepo":
 sys.path.append(os.path.abspath(""))
 
 import torch
-import pytorch_lightning as pl
+from pytorch_lightning import Trainer
 from sklearn.datasets import load_digits
 
 from training.loaders import TensorLoader
@@ -17,14 +17,17 @@ from training.utils import (
     split_array_by_indices,
     array_to_tensor,
 )
-from training.modules import CoreModule
+from training.modules import SupervisedClassifier
+from training.core import CoreTrainer
 from networks.blocks import Conv2dBlock
+
 
 if __name__ == "__main__":
 
     # Load MNIST digits from scikit.datasets
     # sklearn flattens the images for some reason so also need to reshape
     images, targets = load_digits(return_X_y=True)
+    images, targets = images.astype("float32"), targets.astype("int64")
     images = images.reshape((images.shape[0], 1, 8, 8))
 
     # Split out train, val and test sets
@@ -66,15 +69,13 @@ if __name__ == "__main__":
         output_shape=[10],
         out_chans_per_layer=[32, 64],
         output_activation=None,
-    ).to(dtype=train_images.dtype)
-
-    # Specify the lightning module
-    model = CoreModule(
-        network=network,
-        loss_fn=torch.nn.CrossEntropyLoss(),
-        optimiser=torch.optim.Adam,
     )
 
-    # Construct the lightning trainer and fit
-    trainer = pl.Trainer()
-    trainer.fit(model=model, datamodule=loader)
+    # Specify the supervised classifier module with the network to be trained
+    model = SupervisedClassifier(network)
+
+    # Pair the model with the loader in the trainer
+    trainer = CoreTrainer(model, loader)
+
+    # Train the model
+    trainer.train()
