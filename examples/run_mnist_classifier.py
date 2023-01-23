@@ -1,30 +1,30 @@
 """Example of training a 2D convolutional neural network to classify 
 8x8 MNIST images"""
 
-import os
-import torch
-import pytorch_lightning as pl
+import os, sys
+
+if os.path.basename(os.getcwd()) != "pyrepo":
+    os.chdir("..")
+sys.path.append(os.path.abspath(""))
+
 from sklearn.datasets import load_digits
 
-os.chdir("..")
-from training.loaders import TensorLoader
 from training.utils import (
     get_split_indices,
     split_array_by_indices,
     array_to_tensor,
 )
-from training.modules import CoreModule
+from training.modules import SupervisedClassifier
+from training.core import TrainingModule, LoaderModule
 from networks.blocks import Conv2dBlock
 
-# from training.modules import CoreModule
-# from data.loaders import TensorLoader
-# from visual.plotters import plot_tracker
 
 if __name__ == "__main__":
 
     # Load MNIST digits from scikit.datasets
     # sklearn flattens the images for some reason so also need to reshape
     images, targets = load_digits(return_X_y=True)
+    images, targets = images.astype("float32"), targets.astype("int64")
     images = images.reshape((images.shape[0], 1, 8, 8))
 
     # Split out train, val and test sets
@@ -50,7 +50,7 @@ if __name__ == "__main__":
     ]
 
     # Add all images and associated targets to the dataloader
-    loader = TensorLoader(
+    loader = LoaderModule(
         train_data=train_images,
         train_targets=train_targets,
         val_data=val_images,
@@ -61,20 +61,19 @@ if __name__ == "__main__":
     )
 
     # Construct the neural network, in this case a 2d conv block
+    # Pytorch CrossEntropyLoss needs raw logits so set output_activation to none
     network = Conv2dBlock(
         input_shape=[1, 8, 8],
         output_shape=[10],
         out_chans_per_layer=[32, 64],
         output_activation=None,
-    ).to(dtype=train_images.dtype)
-
-    # Specify the lightning module
-    model = CoreModule(
-        network=network,
-        loss_fn=torch.nn.CrossEntropyLoss,
-        optimiser=torch.optim.Adam,
     )
 
-    # Construct the lightning trainer and fit
-    trainer = pl.Trainer()
-    trainer.fit(model=model, datamodule=loader)
+    # Specify the supervised classifier module with the network to be trained
+    model = SupervisedClassifier(network)
+
+    # Pair the model with the loader in the trainer
+    trainer = TrainingModule(model, loader)
+
+    # Train the model
+    trainer.train()

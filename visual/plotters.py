@@ -3,15 +3,6 @@ import numpy as np
 from sklearn.manifold import TSNE
 
 
-def plot_tracker(tracker):
-    plt.figure(figsize=(10, 10))
-    plt.plot(tracker)
-    plt.legend(["Training", "Validation"])
-    plt.xlabel("Optimisation Steps")
-    plt.ylabel("Model Error")
-    plt.show()
-
-
 def plot_images(*input_images):
     if type(input_images) == np.ndarray:
         input_images = (input_images,)
