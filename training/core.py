@@ -1,7 +1,7 @@
 """The core LightningModule parent class which will be inherited by the 
 subclasses in modules.py """
 
-from typing import Dict, Optional
+from typing import Dict, Optional, Sequence
 
 import torch
 from torch.utils.data import DataLoader, TensorDataset
@@ -11,25 +11,41 @@ from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 
 
 class LoaderModule(LightningDataModule):
-    """Generic lightning loader that takes pytorch tensor inputs"""
+    """
+    The LoaderModule is responsible for passing batches of data to the
+    UpdateModule subclass during a TrainingModule train run.
+
+    Each of the train_data, val_data and test_data arguments need to be
+    specified with lists of tensors that have equal sized first dimensions.
+    For example an image dataset for supervised training of a classifier might
+    have 100 paired (X, Y) training samples which would be two tensors
+    in a list:
+
+    train_data = [image tensor of dimension [100, 1, 8, 8],
+                label tensor of dimension [100, 1],
+        ]
+
+    train_data and val_data must be specified (val_data is necessary to
+    prevent overfitting). test_data is optional, but highly recommended.
+
+    All the dataloaders will pass a batch size as specified in the
+    batch_size argument.
+    """
 
     def __init__(
         self,
-        train_data: torch.Tensor,
-        train_targets: torch.Tensor,
-        val_data: torch.Tensor,
-        val_targets: torch.Tensor,
-        test_data: Optional[torch.Tensor] = None,
-        test_targets: Optional[torch.Tensor] = None,
+        train_data: Sequence[torch.Tensor],
+        val_data: Sequence[torch.Tensor],
+        test_data: Optional[Sequence[torch.Tensor]] = None,
         batch_size: int = 64,
     ):
         super().__init__()
 
-        self.train_data = TensorDataset(train_data, train_targets)
-        self.val_data = TensorDataset(val_data, val_targets)
+        self.train_dataset = TensorDataset(*train_data)
+        self.val_dataset = TensorDataset(*val_data)
 
         if test_data is not None:
-            self.test_data = TensorDataset(test_data, test_targets)
+            self.test_dataset = TensorDataset(*test_data)
             self.test_data_present = True
         else:
             self.test_data_present = False
@@ -38,31 +54,56 @@ class LoaderModule(LightningDataModule):
 
     def train_dataloader(self):
         return DataLoader(
-            self.train_data,
+            self.train_dataset,
             batch_size=self.batch_size,
         )
 
     def val_dataloader(self):
         return DataLoader(
-            self.val_data,
+            self.val_dataset,
             batch_size=self.batch_size,
         )
 
     def test_dataloader(self):
         return DataLoader(
-            self.test_data,
+            self.test_dataset,
             batch_size=self.batch_size,
         )
 
 
 class TrainingModule:
-    """Wraps the pytorch lightning trainer, which passes data from the
-    loader to the lightning module and updates the model"""
+    """
+    Matches an UpdateModule subclass (see modules.py) with a LoaderModule
+    subclass and then runs a pytorch lightning Trainer upon calls to the
+    train method.
+
+    Some of the more important lightning Trainer arguments have been pulled out,
+    but additional kwargs can be added using trainer_kwargs.
+
+    Arguments:
+
+    -update_module
+        An instance of an UpdateModule subclass
+    -loader_module
+        An instance of a LoaderModule
+    -accelerator
+        A string specifying "cpu" or "gpu" use. Defaults to "gpu"
+    -devices
+        Specifies number of devices to use e.g. 1 GPU. Defaults to 1
+    -max_epochs
+        Maximum epochs before training is stopped (if early stopping is not
+        triggering). Defaults to 500.
+    -log_every_n_steps
+        How often to log results. Default is every step.
+    -trainer_kwargs:
+        Option to add additional kwargs to trainer.
+        See pytorch_lightning.Trainer for full list
+    """
 
     def __init__(
         self,
-        model,
-        loader,
+        update_module,
+        loader_module,
         accelerator: str = "gpu",
         devices: int = 1,
         max_epochs: int = 500,
@@ -76,14 +117,16 @@ class TrainingModule:
         kwargs["max_epochs"] = max_epochs
         kwargs["log_every_n_steps"] = log_every_n_steps
 
-        self.model = model
-        self.loader = loader
+        self.update_module = update_module
+        self.loader_module = loader_module
         self.trainer = Trainer(**kwargs)
 
     def train(self):
-        self.trainer.fit(self.model, datamodule=self.loader)
-        if self.loader.test_data_present:
-            self.trainer.test(self.model, dataloaders=self.loader)
+        self.trainer.fit(self.update_module, datamodule=self.loader_module)
+        if self.loader_module.test_data_present:
+            self.trainer.test(
+                self.update_module, dataloaders=self.loader_module
+            )
 
 
 class UpdateModule(LightningModule):
