@@ -4,12 +4,58 @@ subclasses in modules.py """
 from typing import Dict, Optional
 
 import torch
+from torch.utils.data import DataLoader, TensorDataset
 from torch.optim.lr_scheduler import ReduceLROnPlateau
-from pytorch_lightning import LightningModule, Trainer
+from pytorch_lightning import LightningDataModule, LightningModule, Trainer
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 
 
-class CoreTrainer:
+class LoaderModule(LightningDataModule):
+    """Generic lightning loader that takes pytorch tensor inputs"""
+
+    def __init__(
+        self,
+        train_data: torch.Tensor,
+        train_targets: torch.Tensor,
+        val_data: torch.Tensor,
+        val_targets: torch.Tensor,
+        test_data: Optional[torch.Tensor] = None,
+        test_targets: Optional[torch.Tensor] = None,
+        batch_size: int = 64,
+    ):
+        super().__init__()
+
+        self.train_data = TensorDataset(train_data, train_targets)
+        self.val_data = TensorDataset(val_data, val_targets)
+
+        if test_data is not None:
+            self.test_data = TensorDataset(test_data, test_targets)
+            self.test_data_present = True
+        else:
+            self.test_data_present = False
+
+        self.batch_size = batch_size
+
+    def train_dataloader(self):
+        return DataLoader(
+            self.train_data,
+            batch_size=self.batch_size,
+        )
+
+    def val_dataloader(self):
+        return DataLoader(
+            self.val_data,
+            batch_size=self.batch_size,
+        )
+
+    def test_dataloader(self):
+        return DataLoader(
+            self.test_data,
+            batch_size=self.batch_size,
+        )
+
+
+class TrainingModule:
     """Wraps the pytorch lightning trainer, which passes data from the
     loader to the lightning module and updates the model"""
 
@@ -20,7 +66,7 @@ class CoreTrainer:
         accelerator: str = "gpu",
         devices: int = 1,
         max_epochs: int = 500,
-        log_every_n_steps: int = 5,
+        log_every_n_steps: int = 1,
         trainer_kwargs: Optional[Dict] = None,
     ):
 
@@ -36,10 +82,11 @@ class CoreTrainer:
 
     def train(self):
         self.trainer.fit(self.model, datamodule=self.loader)
-        self.trainer.test(self.model, dataloaders=self.loader)
+        if self.loader.test_data_present:
+            self.trainer.test(self.model, dataloaders=self.loader)
 
 
-class CoreModule(LightningModule):
+class UpdateModule(LightningModule):
     """
     Wraps the pytorch lightning module, which is designed to handle network
     training in conjunction with the Trainer lightning class. For specific
@@ -64,8 +111,6 @@ class CoreModule(LightningModule):
     (self, batch, batch_idx) as their arguments to be compatible with the
     Trainer. The batch variable passed from the loader is usually a list
     containing [X, Y] (although this will obviously change for custom loaders).
-
-    CLASS NEEDS TENSORBOARD FUNCTIONALITY ADDED
 
     Arguments:
 

@@ -7,18 +7,15 @@ if os.path.basename(os.getcwd()) != "pyrepo":
     os.chdir("..")
 sys.path.append(os.path.abspath(""))
 
-import torch
-from pytorch_lightning import Trainer
 from sklearn.datasets import load_digits
 
-from training.loaders import TensorLoader
 from training.utils import (
     get_split_indices,
     split_array_by_indices,
     array_to_tensor,
 )
 from training.modules import SupervisedClassifier
-from training.core import CoreTrainer
+from training.core import TrainingModule, LoaderModule
 from networks.blocks import Conv2dBlock
 
 
@@ -53,7 +50,7 @@ if __name__ == "__main__":
     ]
 
     # Add all images and associated targets to the dataloader
-    loader = TensorLoader(
+    loader = LoaderModule(
         train_data=train_images,
         train_targets=train_targets,
         val_data=val_images,
@@ -64,6 +61,7 @@ if __name__ == "__main__":
     )
 
     # Construct the neural network, in this case a 2d conv block
+    # Pytorch CrossEntropyLoss needs raw logits so set output_activation to none
     network = Conv2dBlock(
         input_shape=[1, 8, 8],
         output_shape=[10],
@@ -75,7 +73,7 @@ if __name__ == "__main__":
     model = SupervisedClassifier(network)
 
     # Pair the model with the loader in the trainer
-    trainer = CoreTrainer(model, loader)
+    trainer = TrainingModule(model, loader)
 
     # Train the model
     trainer.train()

@@ -1,10 +1,10 @@
 from typing import Dict, Optional
 
 import torch
-from training.core import CoreModule
+from training.core import UpdateModule
 
 
-class SupervisedClassifier(CoreModule):
+class SupervisedClassifier(UpdateModule):
     """A module that trains a network to classify using supervised learning,
     with accuracy as the validation target."""
 
