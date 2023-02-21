@@ -1,13 +1,90 @@
 """The core LightningModule parent class which will be inherited by the 
 subclasses in modules.py """
 
-from typing import Dict, Optional, Sequence
+from typing import Dict, Optional, Sequence, Union
 
+import os
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from pytorch_lightning import LightningDataModule, LightningModule, Trainer
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
+from pytorch_lightning.loggers import TensorBoardLogger
+
+
+class TrainingModule:
+    """
+    Matches an UpdateModule subclass (see modules.py) with a LoaderModule
+    subclass and then runs a pytorch lightning Trainer upon calls to the
+    train method.
+
+    Some of the more important lightning Trainer arguments have been pulled out,
+    but additional kwargs can be added using trainer_kwargs.
+
+    Arguments:
+
+    -update_module
+        An instance of an UpdateModule subclass
+    -loader_module
+        An instance of a LoaderModule
+    -log_name
+        A string specifying the name of the log where training results and
+        hyperparameters will be saved
+    -log_dir
+        A string specifying the directory to place the tensorboard log.
+        If left blank will save to a local logs folder
+    -accelerator
+        A string specifying "cpu" or "gpu" use. Defaults to "gpu"
+    -devices
+        Specifies number of devices to use e.g. 1 GPU. Defaults to 1
+    -max_epochs
+        Maximum epochs before training is stopped (if early stopping is not
+        triggering). Defaults to 500.
+    -log_every_n_steps
+        How often to log results. Default is every step.
+    -trainer_kwargs:
+        Option to add additional kwargs to trainer.
+        See pytorch_lightning.Trainer for full list
+    """
+
+    def __init__(
+        self,
+        update_module,
+        loader_module,
+        log_name: str,
+        log_dir: Optional[str] = None,
+        accelerator: str = "gpu",
+        devices: int = 1,
+        max_epochs: int = 500,
+        log_every_n_steps: int = 1,
+        trainer_kwargs: Optional[Dict] = None,
+    ):
+
+        kwargs = {} if trainer_kwargs is None else trainer_kwargs
+        kwargs["accelerator"] = accelerator
+        kwargs["devices"] = devices
+        kwargs["max_epochs"] = max_epochs
+        kwargs["log_every_n_steps"] = log_every_n_steps
+
+        kwargs["logger"] = TensorBoardLogger(
+            save_dir=os.path.abspath("logs") if log_dir is None else log_dir,
+            name=log_name,
+            log_graph=True,
+        )
+
+        self.update_module = update_module
+        self.update_module.example_input_array = next(
+            iter(loader_module.train_dataloader())
+        )[0]
+        self.loader_module = loader_module
+        self.trainer = Trainer(**kwargs)
+
+    def train(self):
+        self.trainer.fit(self.update_module, datamodule=self.loader_module)
+        if self.loader_module.test_data_present:
+            self.trainer.test(
+                self.update_module, dataloaders=self.loader_module
+            )
 
 
 class LoaderModule(LightningDataModule):
@@ -24,6 +101,9 @@ class LoaderModule(LightningDataModule):
     train_data = [image tensor of dimension [100, 1, 8, 8],
                 label tensor of dimension [100, 1],
         ]
+
+    The first item in the list should always be the tensor being input into
+    the network
 
     train_data and val_data must be specified (val_data is necessary to
     prevent overfitting). test_data is optional, but highly recommended.
@@ -71,64 +151,6 @@ class LoaderModule(LightningDataModule):
         )
 
 
-class TrainingModule:
-    """
-    Matches an UpdateModule subclass (see modules.py) with a LoaderModule
-    subclass and then runs a pytorch lightning Trainer upon calls to the
-    train method.
-
-    Some of the more important lightning Trainer arguments have been pulled out,
-    but additional kwargs can be added using trainer_kwargs.
-
-    Arguments:
-
-    -update_module
-        An instance of an UpdateModule subclass
-    -loader_module
-        An instance of a LoaderModule
-    -accelerator
-        A string specifying "cpu" or "gpu" use. Defaults to "gpu"
-    -devices
-        Specifies number of devices to use e.g. 1 GPU. Defaults to 1
-    -max_epochs
-        Maximum epochs before training is stopped (if early stopping is not
-        triggering). Defaults to 500.
-    -log_every_n_steps
-        How often to log results. Default is every step.
-    -trainer_kwargs:
-        Option to add additional kwargs to trainer.
-        See pytorch_lightning.Trainer for full list
-    """
-
-    def __init__(
-        self,
-        update_module,
-        loader_module,
-        accelerator: str = "gpu",
-        devices: int = 1,
-        max_epochs: int = 500,
-        log_every_n_steps: int = 1,
-        trainer_kwargs: Optional[Dict] = None,
-    ):
-
-        kwargs = {} if trainer_kwargs is None else trainer_kwargs
-        kwargs["accelerator"] = accelerator
-        kwargs["devices"] = devices
-        kwargs["max_epochs"] = max_epochs
-        kwargs["log_every_n_steps"] = log_every_n_steps
-
-        self.update_module = update_module
-        self.loader_module = loader_module
-        self.trainer = Trainer(**kwargs)
-
-    def train(self):
-        self.trainer.fit(self.update_module, datamodule=self.loader_module)
-        if self.loader_module.test_data_present:
-            self.trainer.test(
-                self.update_module, dataloaders=self.loader_module
-            )
-
-
 class UpdateModule(LightningModule):
     """
     Wraps the pytorch lightning module, which is designed to handle network
@@ -155,16 +177,13 @@ class UpdateModule(LightningModule):
     Trainer. The batch variable passed from the loader is usually a list
     containing [X, Y] (although this will obviously change for custom loaders).
 
+    Usually you will also want to add training_epoch_end and
+    validation_epoch_end for the purpose of tensorboard logging.
+
     Arguments:
 
     -network
         A pytorch network (torch.nn.Module)
-    -dirpath
-        The directory path string to save the model file.
-        If left empty will create a lightning_log directory.
-    -filename
-        The filename string to save the model file.
-        If left empty will save in the dirpath location as {epoch}-{step}
     -maximize_val_target
         If set to True, scheduler, early stopper and checkpoint will seek
         to maximize val_target in the logger rather than minimize. Use for
@@ -190,8 +209,6 @@ class UpdateModule(LightningModule):
     def __init__(
         self,
         network,
-        dirpath: Optional[str] = None,
-        filename: Optional[str] = None,
         maximize_val_target: bool = False,
         optimizer=torch.optim.AdamW,
         optimizer_kwargs: Optional[Dict] = None,
@@ -215,8 +232,6 @@ class UpdateModule(LightningModule):
 
         # Assemble checkpointing instructions dict
         checkpoint_kwargs = {
-            "dirpath": dirpath,
-            "filename": filename,
             "monitor": "val_target",
             "mode": mode,
         }
@@ -250,6 +265,11 @@ class UpdateModule(LightningModule):
         return self.network(x)
 
     def configure_optimizers(self):
+        """
+        Configure the optimizers to use a reducing learning rate scheduler
+        based on the val_target monitor
+        """
+
         optimizer = self.optimizer(self.parameters(), **self.optimizer_kwargs)
         return {
             "optimizer": optimizer,
@@ -263,6 +283,10 @@ class UpdateModule(LightningModule):
         }
 
     def configure_callbacks(self):
+        """
+        Configure the early stopping and checkpointing callbacks
+        """
+
         return [
             EarlyStopping(**self.early_stopping_kwargs),
             ModelCheckpoint(**self.checkpoint_kwargs),
