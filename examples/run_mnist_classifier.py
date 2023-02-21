@@ -9,13 +9,13 @@ sys.path.append(os.path.abspath(""))
 
 from sklearn.datasets import load_digits
 
+from training import TrainingModule, LoaderModule
 from training.utils import (
     get_split_indices,
     split_array_by_indices,
     array_to_tensor,
 )
 from training.modules import SupervisedClassifier
-from training.core import TrainingModule, LoaderModule
 from networks.blocks import Conv2dBlock
 
 
@@ -70,7 +70,9 @@ if __name__ == "__main__":
     update_module = SupervisedClassifier(network)
 
     # Pair the model with the loader in the trainer
-    training_module = TrainingModule(update_module, loader_module)
+    training_module = TrainingModule(
+        update_module, loader_module, log_name="mnist_classifier"
+    )
 
-    # Train the model and print out the test results
+    # Train the model and pass the results to tensorboard
     training_module.train()
