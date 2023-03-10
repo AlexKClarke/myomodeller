@@ -11,8 +11,7 @@ class SupervisedClassifier(UpdateModule):
     def __init__(
         self,
         network,
-        loss_fn=torch.nn.CrossEntropyLoss(),
-        optimizer=torch.optim.AdamW,
+        optimizer: str = "AdamW",
         optimizer_kwargs: Optional[Dict] = None,
         lr_scheduler_kwargs: Optional[Dict] = None,
         early_stopping_kwargs: Optional[Dict] = None,
@@ -28,7 +27,7 @@ class SupervisedClassifier(UpdateModule):
             early_stopping_kwargs,
         )
 
-        self.loss_fn = loss_fn
+        self.loss_fn = torch.nn.CrossEntropyLoss()
 
     def training_step(self, batch, batch_idx):
         x, y_target = batch

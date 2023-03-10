@@ -9,70 +9,62 @@ sys.path.append(os.path.abspath(""))
 
 from sklearn.datasets import load_digits
 
-from training import TrainingModule, LoaderModule
-from training.utils import (
-    get_split_indices,
-    split_array_by_indices,
-    array_to_tensor,
-)
-from training.modules import SupervisedClassifier
+from training import TrainingModule
+from training.loader_modules import MNIST
+from training.update_modules import SupervisedClassifier
 from networks.blocks import Conv2dBlock
 
+from training.configure import process_training_module_config
 
 if __name__ == "__main__":
+    # Load the mnist data module
+    loader_module = MNIST(batch_size=64)
 
-    # Load MNIST digits from scikit.datasets
-    # sklearn flattens the images for some reason so also need to reshape
-    images, labels = load_digits(return_X_y=True)
-    images, labels = images.astype("float32"), labels.astype("int64")
-    images = images.reshape((images.shape[0], 1, 8, 8))
-
-    # Split out train, val and test sets
-    train_data, test_data = split_array_by_indices(
-        (images, labels), get_split_indices(labels)
+    # Specify the supervised classifier module with the network to be trained,
+    # in this case a 2d conv block (Pytorch CrossEntropyLoss needs raw logits
+    # so set output_activation to none)
+    update_module = SupervisedClassifier(
+        network=Conv2dBlock(
+            input_shape=[1, 8, 8],
+            output_shape=[10],
+            out_chans_per_layer=[32, 64],
+            output_activation=None,
+        ),
+        optimizer="AdamW",
+        optimizer_kwargs={"lr": 0.001},
     )
-    train_data, val_data = split_array_by_indices(
-        train_data, get_split_indices(train_data[1])
-    )
-
-    # Convert the numpy arrays to torch tensors and break up lists
-    (
-        [train_images, train_labels],
-        [val_images, val_labels],
-        [test_images, test_labels],
-    ) = [array_to_tensor(data) for data in [train_data, val_data, test_data]]
-
-    # Z-score standardise image sets with statistics from train set
-    mean, std = train_images.mean(), train_images.std()
-    [train_images, val_images, test_images] = [
-        ((images - mean) / std)
-        for images in [train_images, val_images, test_images]
-    ]
-
-    # Add all images and associated labels to the dataloader
-    loader_module = LoaderModule(
-        train_data=[train_images, train_labels],
-        val_data=[val_images, val_labels],
-        test_data=[test_images, test_labels],
-        batch_size=64,
-    )
-
-    # Construct the neural network, in this case a 2d conv block
-    # Pytorch CrossEntropyLoss needs raw logits so set output_activation to none
-    network = Conv2dBlock(
-        input_shape=[1, 8, 8],
-        output_shape=[10],
-        out_chans_per_layer=[32, 64],
-        output_activation=None,
-    )
-
-    # Specify the supervised classifier module with the network to be trained
-    update_module = SupervisedClassifier(network)
 
     # Pair the model with the loader in the trainer
     training_module = TrainingModule(
         update_module, loader_module, log_name="mnist_classifier"
     )
+
+    # Alternatively we can use a config dict instead:
+    training_module_config = {
+        "training_module_name": "BasicTrainer",
+        "update_module_config": {
+            "update_module_name": "SupervisedClassifier",
+            "update_module_kwargs": {
+                "optimizer": "AdamW",
+                "optimizer_kwargs": {"lr": 0.001},
+            },
+            "network_config": {
+                "network_name": "blocks.MLPBlock",
+                "network_kwargs": {
+                    "input_shape": [32],
+                    "output_shape": [16],
+                    "out_chans_per_layer": [64, 32],
+                },
+            },
+        },
+        "loader_module_config": {
+            "loader_module_name": "MNIST",
+            "loader_module_kwargs": {"batch_size": 64},
+        },
+        "training_module_kwargs": {"log_name": "mnist_classifier"},
+    }
+
+    training_module = process_training_module_config(training_module_config)
 
     # Train the model and pass the results to tensorboard
     training_module.train()

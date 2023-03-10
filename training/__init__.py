@@ -1,1 +1,1 @@
-from training.core import TrainingModule, LoaderModule
+from training.core import TrainingModule

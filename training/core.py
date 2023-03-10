@@ -90,7 +90,8 @@ class TrainingModule:
 class LoaderModule(LightningDataModule):
     """
     The LoaderModule is responsible for passing batches of data to the
-    UpdateModule subclass during a TrainingModule train run.
+    UpdateModule subclass during a TrainingModule train run. This should be
+    used as the parent class.
 
     Each of the train_data, val_data and test_data arguments need to be
     specified with lists of tensors that have equal sized first dimensions.
@@ -210,7 +211,7 @@ class UpdateModule(LightningModule):
         self,
         network,
         maximize_val_target: bool = False,
-        optimizer=torch.optim.AdamW,
+        optimizer: str = "Adam",
         optimizer_kwargs: Optional[Dict] = None,
         lr_scheduler_kwargs: Optional[Dict] = None,
         early_stopping_kwargs: Optional[Dict] = None,
@@ -256,7 +257,7 @@ class UpdateModule(LightningModule):
         # Move checked arguments to class scope
         self.network = network
         self.checkpoint_kwargs = checkpoint_kwargs
-        self.optimizer = optimizer
+        self.optimizer = getattr(torch.optim, optimizer)
         self.optimizer_kwargs = optimizer_kwargs
         self.lr_scheduler_kwargs = lr_scheduler_kwargs
         self.early_stopping_kwargs = early_stopping_kwargs
