@@ -1,1 +1,1 @@
-from networks import blocks, sparse, utils
+from networks import blocks, transpose, sparse, utils

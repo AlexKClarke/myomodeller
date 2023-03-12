@@ -10,6 +10,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 from pytorch_lightning import LightningDataModule, LightningModule, Trainer
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
+from ray.tune.integration.pytorch_lightning import TuneReportCallback
 
 
 class TrainingModule:
@@ -78,13 +79,6 @@ class TrainingModule:
         )[0]
         self.loader_module = loader_module
         self.trainer = Trainer(**kwargs)
-
-    def train(self):
-        self.trainer.fit(self.update_module, datamodule=self.loader_module)
-        if self.loader_module.test_data_present:
-            self.trainer.test(
-                self.update_module, dataloaders=self.loader_module
-            )
 
 
 class LoaderModule(LightningDataModule):
@@ -290,6 +284,7 @@ class UpdateModule(LightningModule):
 
         return [
             EarlyStopping(**self.early_stopping_kwargs),
+            TuneReportCallback("val_target", on="validation_end"),
             ModelCheckpoint(**self.checkpoint_kwargs),
         ]
 
