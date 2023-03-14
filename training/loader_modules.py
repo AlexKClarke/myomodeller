@@ -22,7 +22,7 @@ class MNIST(LoaderModule):
             val_labels,
             test_images,
             test_labels,
-        ) = self.get_data()
+        ) = self._get_data()
 
         super().__init__(
             train_data=[train_images, train_labels],
@@ -31,7 +31,7 @@ class MNIST(LoaderModule):
             batch_size=batch_size,
         )
 
-    def get_data(self):
+    def _get_data(self):
         """Loads MNIST digits from scikit.datasets"""
 
         # sklearn flattens the images for some reason so also need to reshape

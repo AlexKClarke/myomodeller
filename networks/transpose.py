@@ -142,7 +142,7 @@ class ConvTranspose2dBlock(nn.Module):
                 The output channel size of the linear layer. As the Conv2DBlock
                 has a linear layer at the end, we need the output
                 shape if the time dimension of the input is to match that of
-                the output. This is usually the size of the final conv1d out chan
+                the output. This is usually the size of the final conv2d out chan
             out_chans_per_layer (List[int]):
                 Number of hidden channels per layer, for example
                 [32, 64] would give two layers of hidden channel 32 then 64

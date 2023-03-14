@@ -8,22 +8,21 @@ if os.path.basename(os.getcwd()) != "pyrepo":
     os.chdir("..")
 sys.path.append(os.path.abspath(""))
 
-from training.configure import process_training_module_config
+from training import TrainingModule
 
 if __name__ == "__main__":
 
     training_module_config = {
-        "training_module_name": "BasicTrainer",
-        "training_module_kwargs": {
-            "log_dir": os.path.abspath("logs"),
-            "log_name": "mnist_classifier",
-        },
+        "log_name": "mnist_classifier",
         "update_module_config": {
             "update_module_name": "SupervisedClassifier",
             "update_module_kwargs": {
                 "optimizer": "AdamW",
                 "optimizer_kwargs": {"lr": 0.001},
             },
+            "hpo_mode": True,
+            "num_hpo_trials": 5,
+            "maximize_val_target": True,
             "network_config": {
                 "network_name": "blocks.Conv2dBlock",
                 "network_kwargs": {
@@ -33,7 +32,6 @@ if __name__ == "__main__":
                         tune.choice([32, 64]),
                         tune.choice([32, 64]),
                     ],
-                    "kernel_size_per_layer": 3,
                     "output_activation": None,
                 },
             },
@@ -44,17 +42,6 @@ if __name__ == "__main__":
         },
     }
 
-    def run(config):
-        training_module = process_training_module_config(config)
-        training_module.train()
+    training_module = TrainingModule(training_module_config)
 
-    analysis = tune.run(
-        run,
-        resources_per_trial={"cpu": 1, "gpu": 1},
-        metric="val_target",
-        mode="max",
-        config=training_module_config,
-        num_samples=5,
-    )
-
-    print(analysis.best_config)
+    training_module.train()
