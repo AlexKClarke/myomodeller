@@ -1,7 +1,7 @@
 from typing import Dict, Optional
 
 import torch
-from training.core import UpdateModule
+from training import UpdateModule
 
 
 class SupervisedClassifier(UpdateModule):

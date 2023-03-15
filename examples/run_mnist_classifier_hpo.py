@@ -21,7 +21,7 @@ if __name__ == "__main__":
                 "optimizer_kwargs": {"lr": 0.001},
             },
             "hpo_mode": True,
-            "num_hpo_trials": 5,
+            "num_hpo_trials": 2,
             "maximize_val_target": True,
             "network_config": {
                 "network_name": "blocks.Conv2dBlock",

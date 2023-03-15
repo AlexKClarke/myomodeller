@@ -2,6 +2,8 @@ from typing import Dict, Union, Optional
 
 import os
 import json
+import shutil
+import time
 
 from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import TensorBoardLogger
@@ -58,8 +60,6 @@ class TrainingModule:
                 self.config = json.load(file)
         else:
             self.config = config
-
-        self.fit_flag = False
 
         self._build_path()
 
@@ -154,17 +154,23 @@ class TrainingModule:
             num_samples = self.config["update_module_config"]["num_hpo_trials"]
 
         analysis = tune.run(
-            self._train,
+            tune.with_parameters(self._train),
             resources_per_trial={"cpu": 1, "gpu": 1},
             metric="val_target",
             mode=mode,
             config=self.config,
             num_samples=num_samples,
+            local_dir="tune_temp",
+            name="temp",
         )
 
         best_config = analysis.best_config
         best_config["hpo_version"] = analysis.trials.index(analysis.best_trial)
         self._dump_config(best_config, best=True)
+
+        time.sleep(1)
+        if os.path.isdir("tune_temp"):
+            shutil.rmtree("tune_temp")
 
     def train(self):
         if self.config["update_module_config"]["hpo_mode"] is False:

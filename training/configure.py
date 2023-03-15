@@ -82,9 +82,9 @@ def process_update_module_config(config: Dict):
 
     """
 
-    import training.update_modules
+    import update_modules
 
-    return getattr(training.update_modules, config["update_module_name"])(
+    return getattr(update_modules, config["update_module_name"])(
         network=process_network_config(config["network_config"]),
         hpo_mode=config["hpo_mode"],
         maximize_val_target=config["maximize_val_target"],
@@ -103,8 +103,8 @@ def process_loader_module_config(config: Dict):
 
     """
 
-    import training.loader_modules
+    import loader_modules
 
-    return getattr(training.loader_modules, config["loader_module_name"])(
+    return getattr(loader_modules, config["loader_module_name"])(
         **config["loader_module_kwargs"]
     )
