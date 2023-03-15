@@ -1,7 +1,7 @@
 from typing import Dict, Optional
 
 import torch
-from training.core import UpdateModule
+from training import UpdateModule
 
 
 class SupervisedClassifier(UpdateModule):
@@ -11,16 +11,17 @@ class SupervisedClassifier(UpdateModule):
     def __init__(
         self,
         network,
-        loss_fn=torch.nn.CrossEntropyLoss(),
-        optimizer=torch.optim.AdamW,
+        hpo_mode: bool = False,
+        maximize_val_target: bool = True,
+        optimizer: str = "AdamW",
         optimizer_kwargs: Optional[Dict] = None,
         lr_scheduler_kwargs: Optional[Dict] = None,
         early_stopping_kwargs: Optional[Dict] = None,
     ):
-        maximize_val_target = True
 
         super().__init__(
             network,
+            hpo_mode,
             maximize_val_target,
             optimizer,
             optimizer_kwargs,
@@ -28,7 +29,7 @@ class SupervisedClassifier(UpdateModule):
             early_stopping_kwargs,
         )
 
-        self.loss_fn = loss_fn
+        self.loss_fn = torch.nn.CrossEntropyLoss()
 
     def training_step(self, batch, batch_idx):
         x, y_target = batch

@@ -7,6 +7,8 @@ from networks.blocks import (
     Conv1dBlock,
     Conv2dBlock,
     MLPBlock,
+)
+from networks.transpose import (
     ConvTranspose1dBlock,
     ConvTranspose2dBlock,
 )
@@ -22,23 +24,23 @@ class MLPSparseAutoencoder(nn.Module):
         use_batch_norm: bool = True,
         encoder_output_activation: Optional[Type[nn.Module]] = nn.Tanh,
     ):
-        """An MLP-based sparse autoencoder 
+        """An MLP-based sparse autoencoder
 
         Args:
-            input_shape (Sequence[int]): 
+            input_shape (Sequence[int]):
                 The input shape of the data - [..., Feature]
                 (Linear layers operate on the final dimension)
             output_shape (Sequence[int]):
                 The output shape of the data - [..., Feature]
             sparse_dim (int):
                 The dimension of the sparse layer
-            out_chans_per_layer (List[int]): 
+            out_chans_per_layer (List[int]):
                 Number of hidden channels per layer, for example
                 [64, 32] would give two layers of hidden channel 64 then 32
-            use_batch_norm (bool, optional): 
+            use_batch_norm (bool, optional):
                 Whether to batch norm after each linear layer
                 Defaults to True.
-            encoder_output_activation (Optional[Type[nn.Module]], optional): 
+            encoder_output_activation (Optional[Type[nn.Module]], optional):
                 Activation layer at end of encoder
                 Defaults to nn.Tanh.
         """
@@ -78,32 +80,32 @@ class Conv1dSparseAutoencoder(nn.Module):
         use_batch_norm: bool = True,
         encoder_output_activation: Optional[Type[nn.Module]] = nn.Tanh,
     ):
-        """A Conv1d-based sparse autoencoder 
+        """A Conv1d-based sparse autoencoder
 
         Args:
-            input_shape (Sequence[int]): 
+            input_shape (Sequence[int]):
                 The input shape of the data - [Channel, Time]
             output_shape (Sequence[int]):
                 The output shape of the data - [Channel, Time]
             sparse_dim (int):
                 The dimension of the sparse layer
-            out_chans_per_layer (List[int]): 
+            out_chans_per_layer (List[int]):
                 Number of hidden channels per layer, for example
                 [64, 32] would give two layers of hidden channel 64 then 32
-            kernel_size_per_layer (Union[int, List[int]], optional): 
-                Size of the conv1d kernel 
+            kernel_size_per_layer (Union[int, List[int]], optional):
+                Size of the conv1d kernel
                 Can be set as a list of same length as kernel_size_per_layer
                 or as an int (in which case the same value will be used for each layer)
                 Defaults to 5.
             stride_per_layer (Union[int, List[int]], optional):
-                Size of the conv1d stride 
+                Size of the conv1d stride
                 Can be set as a list of same length as kernel_size_per_layer
                 or as an int (in which case the same value will be used for each layer)
                 Defaults to 1.
-            use_batch_norm (bool, optional): 
+            use_batch_norm (bool, optional):
                 Whether to batch norm after each linear layer
                 Defaults to True.
-            encoder_output_activation (Optional[Type[nn.Module]], optional): 
+            encoder_output_activation (Optional[Type[nn.Module]], optional):
                 Activation layer at end of encoder
                 Defaults to nn.Tanh.
         """
@@ -152,19 +154,19 @@ class Conv2dSparseAutoencoder(nn.Module):
         use_batch_norm: bool = True,
         encoder_output_activation: Optional[Type[nn.Module]] = nn.Tanh,
     ):
-        """A Conv2d-based sparse autoencoder 
+        """A Conv2d-based sparse autoencoder
 
         Args:
-            input_shape (Sequence[int]): 
+            input_shape (Sequence[int]):
                 The input shape of the data - [Channel, Height, Width]
             output_shape (Sequence[int]):
                 The output shape of the data - [Channel, Height, Width]
             sparse_dim (int):
                 The dimension of the sparse layer
-            out_chans_per_layer (List[int]): 
+            out_chans_per_layer (List[int]):
                 Number of hidden channels per layer, for example
                 [64, 32] would give two layers of hidden channel 64 then 32
-            kernel_size_per_layer (Union[int, List[int]], optional): 
+            kernel_size_per_layer (Union[int, List[int]], optional):
                 Size of the conv2d kernel (height and width)
                 Can be set as a list of (H, W) tuples of same length as kernel_size_per_layer
                 or as an int (in which case the same value will be used for each layer)
@@ -174,10 +176,10 @@ class Conv2dSparseAutoencoder(nn.Module):
                 Can be set as a list of (H, W) tuples of same length as kernel_size_per_layer
                 or as an int (in which case the same value will be used for each layer)
                 Defaults to 1.
-            use_batch_norm (bool, optional): 
+            use_batch_norm (bool, optional):
                 Whether to batch norm after each linear layer
                 Defaults to True.
-            encoder_output_activation (Optional[Type[nn.Module]], optional): 
+            encoder_output_activation (Optional[Type[nn.Module]], optional):
                 Activation layer at end of encoder
                 Defaults to nn.Tanh.
         """
