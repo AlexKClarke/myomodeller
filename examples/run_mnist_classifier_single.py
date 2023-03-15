@@ -11,6 +11,9 @@ from training import TrainingModule
 
 if __name__ == "__main__":
 
+    # The entirety of the run is defined by config, which will be unpacked
+    # at run time. The training module will look in the loader_modules
+    # and update_modules __init__.py for the named modules and then pass
     training_module_config = {
         "log_name": "mnist_classifier",
         "update_module_config": {
@@ -19,7 +22,6 @@ if __name__ == "__main__":
                 "optimizer": "AdamW",
                 "optimizer_kwargs": {"lr": 0.001},
             },
-            "hpo_mode": False,
             "maximize_val_target": True,
             "network_config": {
                 "network_name": "blocks.Conv2dBlock",
@@ -37,6 +39,8 @@ if __name__ == "__main__":
         },
     }
 
+    # Once the config is defined it can be passed to an instance of the
+    # training module
     training_module = TrainingModule(training_module_config)
 
     # Train the model and pass the results to tensorboard

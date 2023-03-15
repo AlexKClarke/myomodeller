@@ -1,31 +1,35 @@
-"""Converts a training module config dict to the class
-Update module config specified for example as:
+"""Configs are used to specify models and to train them. For example:
 
-training_module_config = {
-    "training_module_kwargs": {"log_name": "mnist_classifier"},
-    "update_module_config": {
-        "update_module_name": "SupervisedClassifier",
-        "update_module_kwargs": {
-            "optimizer": "AdamW",
-            "optimizer_kwargs": {"lr": 0.001},
-        },
-        "hpo_mode": False,
-        "maximize_val_target": True,
-        "network_config": {
-            "network_name": "blocks.Conv2dBlock",
-            "network_kwargs": {
-                "input_shape": [1, 8, 8],
-                "output_shape": [10],
-                "out_chans_per_layer": [32, 64],
-                "output_activation": None,
+    training_module_config = {
+        "log_name": "mnist_classifier",
+        "hpo_mode": True,
+        "num_hpo_trials": 5,
+        "trainer_kwargs": {"max_epochs": 1000},
+        "update_module_config": {
+            "update_module_name": "SupervisedClassifier",
+            "update_module_kwargs": {
+                "optimizer": "AdamW",
+                "optimizer_kwargs": {"lr": 0.001},
+            },
+            "maximize_val_target": True,
+            "network_config": {
+                "network_name": "blocks.Conv2dBlock",
+                "network_kwargs": {
+                    "input_shape": [1, 8, 8],
+                    "output_shape": [10],
+                    "out_chans_per_layer": [
+                        tune.choice([32, 64]),
+                        tune.choice([32, 64]),
+                    ],
+                    "output_activation": None,
+                },
             },
         },
-    },
-    "loader_module_config": {
-        "loader_module_name": "MNIST",
-        "loader_module_kwargs": {"batch_size": 64},
-    },
-}
+        "loader_module_config": {
+            "loader_module_name": "MNIST",
+            "loader_module_kwargs": {"batch_size": 64},
+        },
+    }
 
 
 """
@@ -67,7 +71,6 @@ def process_update_module_config(config: Dict):
             "optimizer": "AdamW",
             "optimizer_kwargs": {"lr": 0.001},
         },
-        "hpo_mode": False,
         "maximize_val_target": True,
         "network_config": {
             "network_name": "blocks.Conv2dBlock",
@@ -84,10 +87,13 @@ def process_update_module_config(config: Dict):
 
     import update_modules
 
+    if "hpo_mode" not in config:
+        config["hpo_mode"] = False
+
     return getattr(update_modules, config["update_module_name"])(
         network=process_network_config(config["network_config"]),
-        hpo_mode=config["hpo_mode"],
         maximize_val_target=config["maximize_val_target"],
+        hpo_mode=config["hpo_mode"],
         **config["update_module_kwargs"]
     )
 

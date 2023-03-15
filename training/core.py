@@ -1,5 +1,5 @@
 """The core LightningModule parent classes which will be inherited by the 
-subclasses in modules.py """
+subclasses in loader and update subclasses"""
 
 from typing import Dict, Optional, Sequence
 
@@ -109,6 +109,9 @@ class UpdateModule(LightningModule):
 
     -network
         A pytorch network (torch.nn.Module)
+    -hpo_mode
+        A bool flag which adds a ray tune callback to the callbacks list
+        for hyperparameter optimisation
     -maximize_val_target
         If set to True, scheduler, early stopper and checkpoint will seek
         to maximize val_target in the logger rather than minimize. Use for

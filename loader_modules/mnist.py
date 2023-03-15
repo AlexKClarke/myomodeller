@@ -1,5 +1,3 @@
-"""Loader module subclasses"""
-
 from sklearn.datasets import load_digits
 
 from training import LoaderModule
