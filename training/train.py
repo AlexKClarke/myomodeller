@@ -61,6 +61,10 @@ class TrainingModule:
         if "hpo_mode" not in config:
             config["hpo_mode"] = False
 
+        # Need to set the ckpt_path as None if missing
+        if "ckpt_path" not in config:
+            config["ckpt_path"] = None
+
         self.config = config
 
         self._build_path()
@@ -128,8 +132,8 @@ class TrainingModule:
         ) as file:
             json.dump(config, file, indent=4)
 
-    def _train(self, config: Dict) -> None:
-        """The internal train function which will create instances of the
+    def _run(self, config: Dict, test_mode=False) -> None:
+        """The internal train/test function which will create instances of the
         modules from the config and then start a trainer instance."""
 
         # Create the loader module from the config
@@ -176,15 +180,39 @@ class TrainingModule:
         )
 
         # Save the config file to the newly created version folder
-        self._dump_config(config, self._get_version())
+        if test_mode is False:
+            self._dump_config(config, self._get_version())
 
-        # Instantiate the lighting trainer module and begin training
+        # Instantiate the lighting trainer module
         trainer_module = Trainer(**trainer_kwargs)
-        trainer_module.fit(update_module, datamodule=loader_module)
 
-        # Add a test data test if it is present in the dataloader
+        # Check that dataloader has correct data for training/testing
+        if test_mode:
+            assert (
+                loader_module.test_data_present
+            ), "Loader module needs test data for test mode."
+        else:
+            assert (
+                loader_module.train_data_present
+                and loader_module.val_data_present
+            ), "Loader module needs train and validation data for train mode."
+
+        # Begin training if not in test mode
+        if test_mode is False:
+            trainer_module.fit(
+                update_module,
+                datamodule=loader_module,
+                ckpt_path=config["ckpt_path"],
+            )
+
+        # Run testing
         if loader_module.test_data_present:
-            trainer_module.test(update_module, dataloaders=loader_module)
+            ckpt_path = config["ckpt_path"] if test_mode else None
+            trainer_module.test(
+                update_module,
+                dataloaders=loader_module,
+                ckpt_path=ckpt_path,
+            )
 
     def _hpo(self) -> None:
         """Internal hyperparameter optimisation using ray tune"""
@@ -206,7 +234,7 @@ class TrainingModule:
         # different versions of config with the search space functions
         # replaced by specific values
         analysis = tune.run(
-            tune.with_parameters(self._train),
+            tune.with_parameters(self._run),
             resources_per_trial={"cpu": 1, "gpu": 1},
             metric="val_target",
             mode=mode,
@@ -234,6 +262,11 @@ class TrainingModule:
         depending on the hpo_mode flag in the config"""
 
         if self.config["hpo_mode"] is False:
-            self._train(self.config)
+            self._run(self.config)
         else:
             self._hpo()
+
+    def test(self) -> None:
+        """Runs a test session and outputs a tensorboard file with results"""
+
+        self._run(self.config, test_mode=True)
