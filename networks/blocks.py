@@ -13,7 +13,7 @@ class MLPBlock(nn.Module):
         output_shape: Sequence[int],
         out_chans_per_layer: List[int],
         use_batch_norm: bool = True,
-        output_activation: Optional[Type[nn.Module]] = None,
+        output_activation: Optional[str] = None,
     ):
         """Builds a number of linear layers
 
@@ -29,9 +29,9 @@ class MLPBlock(nn.Module):
         use_batch_norm (bool, optional):
             Whether to batch norm after each linear layer
             Defaults to True.
-        output_activation (Optional[Type[nn.Module]], optional):
+        output_activation (Optional[str], optional):
             Allows an nn activation to be added to end of block
-            Defaults to None.
+            Defaults to None .
         """
         super().__init__()
 
@@ -51,7 +51,7 @@ class MLPBlock(nn.Module):
         self.block.append(Reshape(output_shape))
 
         if output_activation is not None:
-            self.block.append(output_activation())
+            self.block.append(getattr(torch.nn, output_activation)())
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         for layer in self.block:
@@ -68,7 +68,7 @@ class Conv1dBlock(nn.Module):
         kernel_size_per_layer: Union[int, List[int]] = 3,
         stride_per_layer: Union[int, List[int]] = 1,
         use_batch_norm: bool = True,
-        output_activation: Optional[Type[nn.Module]] = None,
+        output_activation: Optional[str] = None,
     ):
         """Builds a number of conv1d layers and then flattens with linear layer
         to desired output shape
@@ -94,7 +94,7 @@ class Conv1dBlock(nn.Module):
             use_batch_norm (bool, optional):
                 Whether to batch norm after each conv1d
                 Defaults to True.
-            output_activation (Optional[Type[nn.Module]], optional):
+            output_activation: Optional[str] = None,
                 Allows an nn activation to be added to end of block
                 Defaults to None.
         """
@@ -140,7 +140,7 @@ class Conv1dBlock(nn.Module):
         self.block.append(Reshape(output_shape))
 
         if output_activation is not None:
-            self.block.append(output_activation())
+            self.block.append(getattr(torch.nn, output_activation)())
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         for layer in self.block:
@@ -183,7 +183,7 @@ class Conv2dBlock(nn.Module):
         use_batch_norm (bool, optional):
             Whether to batch norm after each conv2d
             Defaults to True.
-        output_activation (Optional[Type[nn.Module]], optional):
+        output_activation: Optional[str] = None,
             Allows an nn activation to be added to end of block
             Defaults to None.
         """
@@ -235,11 +235,10 @@ class Conv2dBlock(nn.Module):
         self.block.append(Reshape(output_shape))
 
         if output_activation is not None:
-            self.block.append(output_activation())
+            self.block.append(getattr(torch.nn, output_activation)())
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         for layer in self.block:
             x = layer(x)
         return x
-
 
