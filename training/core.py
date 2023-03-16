@@ -46,14 +46,23 @@ class LoaderModule(LightningDataModule):
     ):
         super().__init__()
 
-        self.train_dataset = TensorDataset(*train_data)
-        self.val_dataset = TensorDataset(*val_data)
+        [
+            self.train_data_present,
+            self.val_data_present,
+            self.test_data_present,
+        ] = [data is not None for data in [train_data, val_data, test_data]]
 
-        if test_data is not None:
+        if self.train_data_present:
+            self.train_dataset = TensorDataset(*train_data)
+            self.train_data_present = True
+
+        if self.val_data_present:
+            self.val_dataset = TensorDataset(*val_data)
+            self.val_data_present = True
+
+        if self.test_data_present:
             self.test_dataset = TensorDataset(*test_data)
             self.test_data_present = True
-        else:
-            self.test_data_present = False
 
         self.batch_size = batch_size
 
