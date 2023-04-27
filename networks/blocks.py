@@ -1,4 +1,4 @@
-"""Blocks of neural network architectures for autoencoders.
+"""Blocks of neural network architectures.
 """
 from typing import Sequence, Union, Optional, List, Type, Tuple, Iterable, cast
 import torch
@@ -14,6 +14,7 @@ class MLPBlock(nn.Module):
         out_chans_per_layer: List[int],
         use_batch_norm: bool = True,
         output_activation: Optional[str] = None,
+        use_output_bias: bool = True,
     ):
         """Builds a number of linear layers
 
@@ -31,7 +32,9 @@ class MLPBlock(nn.Module):
             Defaults to True.
         output_activation (Optional[str], optional):
             Allows an nn activation to be added to end of block
-            Defaults to None .
+            Defaults to Identity.
+        use_output_bias: bool = True
+            Whether to use bias on output layer
         """
         super().__init__()
 
@@ -47,11 +50,15 @@ class MLPBlock(nn.Module):
 
         flat_output_dim = int(torch.tensor(output_shape).prod().numpy())
 
-        self.block.append(nn.Linear(out_features, flat_output_dim))
+        self.block.append(
+            nn.Linear(out_features, flat_output_dim, bias=use_output_bias)
+        )
         self.block.append(Reshape(output_shape))
-
-        if output_activation is not None:
-            self.block.append(getattr(torch.nn, output_activation)())
+        self.block.append(
+            getattr(torch.nn, output_activation)()
+            if output_activation
+            else torch.nn.Identity()
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         for layer in self.block:
@@ -69,6 +76,7 @@ class Conv1dBlock(nn.Module):
         stride_per_layer: Union[int, List[int]] = 1,
         use_batch_norm: bool = True,
         output_activation: Optional[str] = None,
+        use_output_bias: bool = True,
     ):
         """Builds a number of conv1d layers and then flattens with linear layer
         to desired output shape
@@ -97,6 +105,8 @@ class Conv1dBlock(nn.Module):
             output_activation: Optional[str] = None,
                 Allows an nn activation to be added to end of block
                 Defaults to None.
+            use_output_bias: bool = True
+                Whether to use bias on output layer
         """
         super().__init__()
 
@@ -136,11 +146,15 @@ class Conv1dBlock(nn.Module):
         flat_output_dim = int(torch.tensor(output_shape).prod().numpy())
 
         self.block.append(nn.Flatten())
-        self.block.append(nn.Linear(flat_conv_dim, flat_output_dim))
+        self.block.append(
+            nn.Linear(flat_conv_dim, flat_output_dim, bias=use_output_bias)
+        )
         self.block.append(Reshape(output_shape))
-
-        if output_activation is not None:
-            self.block.append(getattr(torch.nn, output_activation)())
+        self.block.append(
+            getattr(torch.nn, output_activation)()
+            if output_activation
+            else torch.nn.Identity()
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         for layer in self.block:
@@ -158,6 +172,7 @@ class Conv2dBlock(nn.Module):
         stride_per_layer: Union[int, List[Tuple[int, int]]] = 1,
         use_batch_norm: bool = True,
         output_activation: Optional[Type[nn.Module]] = None,
+        use_output_bias: bool = True,
     ):
         """Builds a number of conv2d layers and then flattens with linear layer
         to desired output shape
@@ -186,6 +201,8 @@ class Conv2dBlock(nn.Module):
         output_activation: Optional[str] = None,
             Allows an nn activation to be added to end of block
             Defaults to None.
+        use_output_bias: bool = True
+            Whether to use bias on output layer
         """
 
         super().__init__()
@@ -231,14 +248,17 @@ class Conv2dBlock(nn.Module):
         flat_output_dim = int(torch.tensor(output_shape).prod().numpy())
 
         self.block.append(nn.Flatten())
-        self.block.append(nn.Linear(flat_conv_dim, flat_output_dim))
+        self.block.append(
+            nn.Linear(flat_conv_dim, flat_output_dim, bias=use_output_bias)
+        )
         self.block.append(Reshape(output_shape))
-
-        if output_activation is not None:
-            self.block.append(getattr(torch.nn, output_activation)())
+        self.block.append(
+            getattr(torch.nn, output_activation)()
+            if output_activation
+            else torch.nn.Identity()
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         for layer in self.block:
             x = layer(x)
         return x
-

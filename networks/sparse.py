@@ -22,7 +22,7 @@ class MLPSparseAutoencoder(nn.Module):
         sparse_dim: int,
         out_chans_per_layer: List[int],
         use_batch_norm: bool = True,
-        encoder_output_activation: Optional[Type[nn.Module]] = nn.Tanh,
+        encoder_output_activation: Optional[Type[nn.Module]] = None,
     ):
         """An MLP-based sparse autoencoder
 
@@ -42,7 +42,7 @@ class MLPSparseAutoencoder(nn.Module):
                 Defaults to True.
             encoder_output_activation (Optional[Type[nn.Module]], optional):
                 Activation layer at end of encoder
-                Defaults to nn.Tanh.
+                Defaults to Identity.
         """
         super().__init__()
 
@@ -52,6 +52,7 @@ class MLPSparseAutoencoder(nn.Module):
             out_chans_per_layer=out_chans_per_layer,
             use_batch_norm=use_batch_norm,
             output_activation=encoder_output_activation,
+            use_output_bias=False,
         )
 
         out_chans_per_layer = out_chans_per_layer[::-1]
@@ -67,6 +68,9 @@ class MLPSparseAutoencoder(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.decoder(self.encoder(x))
 
+    def return_sparse_weights(self) -> torch.Tensor:
+        return self.encoder.block[-3].weight
+
 
 class Conv1dSparseAutoencoder(nn.Module):
     def __init__(
@@ -78,7 +82,7 @@ class Conv1dSparseAutoencoder(nn.Module):
         kernel_size_per_layer: Union[int, List[int]] = 3,
         stride_per_layer: Union[int, List[int]] = 1,
         use_batch_norm: bool = True,
-        encoder_output_activation: Optional[Type[nn.Module]] = nn.Tanh,
+        encoder_output_activation: Optional[Type[nn.Module]] = None,
     ):
         """A Conv1d-based sparse autoencoder
 
@@ -107,7 +111,7 @@ class Conv1dSparseAutoencoder(nn.Module):
                 Defaults to True.
             encoder_output_activation (Optional[Type[nn.Module]], optional):
                 Activation layer at end of encoder
-                Defaults to nn.Tanh.
+                Defaults to identity.
         """
         super().__init__()
 
@@ -119,6 +123,7 @@ class Conv1dSparseAutoencoder(nn.Module):
             stride_per_layer=stride_per_layer,
             use_batch_norm=use_batch_norm,
             output_activation=encoder_output_activation,
+            use_output_bias=False,
         )
 
         linear_out_chan = out_chans_per_layer[-1]
@@ -141,6 +146,9 @@ class Conv1dSparseAutoencoder(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.decoder(self.encoder(x))
 
+    def return_sparse_weights(self) -> torch.Tensor:
+        return self.encoder.block[-3].weight
+
 
 class Conv2dSparseAutoencoder(nn.Module):
     def __init__(
@@ -152,7 +160,7 @@ class Conv2dSparseAutoencoder(nn.Module):
         kernel_size_per_layer: Union[int, List[Tuple[int, int]]] = 3,
         stride_per_layer: Union[int, List[Tuple[int, int]]] = 1,
         use_batch_norm: bool = True,
-        encoder_output_activation: Optional[Type[nn.Module]] = nn.Tanh,
+        encoder_output_activation: Optional[Type[nn.Module]] = None,
     ):
         """A Conv2d-based sparse autoencoder
 
@@ -181,7 +189,7 @@ class Conv2dSparseAutoencoder(nn.Module):
                 Defaults to True.
             encoder_output_activation (Optional[Type[nn.Module]], optional):
                 Activation layer at end of encoder
-                Defaults to nn.Tanh.
+                Defaults to identity
         """
         super().__init__()
 
@@ -193,6 +201,7 @@ class Conv2dSparseAutoencoder(nn.Module):
             stride_per_layer=stride_per_layer,
             use_batch_norm=use_batch_norm,
             output_activation=encoder_output_activation,
+            use_output_bias=False,
         )
 
         linear_out_chan = out_chans_per_layer[-1]
@@ -214,3 +223,6 @@ class Conv2dSparseAutoencoder(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.decoder(self.encoder(x))
+
+    def return_sparse_weights(self) -> torch.Tensor:
+        return self.encoder.block[-3].weight
