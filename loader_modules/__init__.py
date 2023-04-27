@@ -4,4 +4,3 @@ training module. See training.core for the parent class.
 """
 
 from loader_modules.mnist import MNIST
-from loader_modules.arm import VolumeConductor

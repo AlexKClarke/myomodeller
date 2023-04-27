@@ -4,7 +4,7 @@ import torch
 from training import UpdateModule
 
 
-class SupervisedRegressor(UpdateModule):
+class SparseAutoencoder(UpdateModule):
     """A module that trains a network to regress using supervised learning,
     with accuracy as the validation target."""
 
@@ -17,8 +17,8 @@ class SupervisedRegressor(UpdateModule):
         optimizer_kwargs: Optional[Dict] = None,
         lr_scheduler_kwargs: Optional[Dict] = None,
         early_stopping_kwargs: Optional[Dict] = None,
+        l1_loss_coeff: float = 0.1,
     ):
-
         super().__init__(
             network,
             hpo_mode,
@@ -30,11 +30,17 @@ class SupervisedRegressor(UpdateModule):
         )
 
         self.loss_fn = torch.nn.MSELoss()
+        self.lamb = l1_loss_coeff
 
     def training_step(self, batch, batch_idx):
         x, y_target = batch
         y_predict = self(x)
-        loss = self.loss_fn(y_predict, y_target)
+        recon_loss = self.loss_fn(y_predict, y_target)
+
+        sparse_weights = self.network.return_sparse_weights()
+        l1_loss = sparse_weights.abs().mean()
+
+        loss = recon_loss + self.lamb * l1_loss
         return loss
 
     def training_epoch_end(self, outputs):
@@ -46,7 +52,12 @@ class SupervisedRegressor(UpdateModule):
     def validation_step(self, batch, batch_idx):
         x, y_target = batch
         y_predict = self(x)
-        loss = self.loss_fn(y_predict, y_target)
+        recon_loss = self.loss_fn(y_predict, y_target)
+
+        sparse_weights = self.network.return_sparse_weights()
+        l1_loss = sparse_weights.abs().mean()
+
+        loss = recon_loss + self.lamb * l1_loss
         self.log("val_target", loss)
         return loss
 
@@ -59,7 +70,12 @@ class SupervisedRegressor(UpdateModule):
     def test_step(self, batch, batch_idx):
         x, y_target = batch
         y_predict = self(x)
-        loss = self.loss_fn(y_predict, y_target)
+        recon_loss = self.loss_fn(y_predict, y_target)
+
+        sparse_weights = self.network.return_sparse_weights()
+        l1_loss = sparse_weights.abs().mean()
+
+        loss = recon_loss + self.lamb * l1_loss
         return loss
 
     def test_epoch_end(self, outputs):

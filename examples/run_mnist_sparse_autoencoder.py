@@ -1,39 +1,41 @@
+"""Example of training a 2D convolutional neural network to autoencode 
+8x8 MNIST images"""
+
 import os, sys
 
 if os.path.basename(os.getcwd()) != "pyrepo":
     os.chdir("..")
 sys.path.append(os.path.abspath(""))
 
-
 from training import TrainingModule
 
 if __name__ == "__main__":
-
     # The entirety of the run is defined by config, which will be unpacked
     # at run time. The training module will look in the loader_modules
     # and update_modules __init__.py for the named modules and then pass
     training_module_config = {
-        "log_name": "volume_conductor",
+        "log_name": "mnist_autoencoder",
         "update_module_config": {
-            "update_module_name": "SupervisedRegressor",
+            "update_module_name": "SparseAutoencoder",
             "update_module_kwargs": {
                 "optimizer": "AdamW",
                 "optimizer_kwargs": {"lr": 0.001},
+                "l1_loss_coeff": 0.1,
             },
-            "maximize_val_target": False,
+            "maximize_val_target": True,
             "network_config": {
-                "network_name": "blocks.MLPBlock",
+                "network_name": "sparse.Conv2dSparseAutoencoder",
                 "network_kwargs": {
-                    "input_shape": [6],
-                    "output_shape": [3],
+                    "input_shape": [1, 8, 8],
+                    "output_shape": [1, 8, 8],
+                    "sparse_dim": 3,
                     "out_chans_per_layer": [32, 64],
-                    "output_activation": "Sigmoid",
                 },
             },
         },
         "loader_module_config": {
-            "loader_module_name": "VolumeConductor",
-            "loader_module_kwargs": {"batch_size": 64},
+            "loader_module_name": "MNIST",
+            "loader_module_kwargs": {"batch_size": 64, "auto": True},
         },
     }
 

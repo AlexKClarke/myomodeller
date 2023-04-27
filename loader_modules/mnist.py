@@ -11,8 +11,7 @@ from loader_modules.utils import (
 class MNIST(LoaderModule):
     """Loader module that retrieves sklearn's MNIST set"""
 
-    def __init__(self, batch_size: int = 64):
-
+    def __init__(self, batch_size: int = 64, auto: bool = False):
         (
             train_images,
             train_labels,
@@ -23,9 +22,9 @@ class MNIST(LoaderModule):
         ) = self._get_data()
 
         super().__init__(
-            train_data=[train_images, train_labels],
-            val_data=[val_images, val_labels],
-            test_data=[test_images, test_labels],
+            train_data=[train_images, train_images if auto else train_labels],
+            val_data=[val_images, val_images if auto else val_labels],
+            test_data=[test_images, test_images if auto else test_labels],
             batch_size=batch_size,
         )
 
