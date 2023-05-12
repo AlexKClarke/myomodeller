@@ -6,7 +6,7 @@ from training import UpdateModule
 
 class SupervisedRegressor(UpdateModule):
     """A module that trains a network to regress using supervised learning,
-    with accuracy as the validation target."""
+    with the loss as the validation target."""
 
     def __init__(
         self,
@@ -18,7 +18,6 @@ class SupervisedRegressor(UpdateModule):
         lr_scheduler_kwargs: Optional[Dict] = None,
         early_stopping_kwargs: Optional[Dict] = None,
     ):
-
         super().__init__(
             network,
             hpo_mode,

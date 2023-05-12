@@ -4,21 +4,21 @@ import torch
 from training import UpdateModule
 
 
-class SparseAutoencoder(UpdateModule):
-    """A module that trains a network to autoencode. The network must have
-    a "return_sparse_weights" method which returns the weights on the
-    bottleneck of the sparse autoencoder."""
+class DeepMetricLearner(UpdateModule):
+    """A module that trains a network to perform deep metric learning,
+    with the loss as the validation target."""
 
     def __init__(
         self,
         network,
+        num_classes: int,
         hpo_mode: bool = False,
         maximize_val_target: bool = True,
         optimizer: str = "AdamW",
         optimizer_kwargs: Optional[Dict] = None,
         lr_scheduler_kwargs: Optional[Dict] = None,
         early_stopping_kwargs: Optional[Dict] = None,
-        l1_loss_coeff: float = 0.1,
+        margin: float = 0.1,
     ):
         super().__init__(
             network,
@@ -31,16 +31,38 @@ class SparseAutoencoder(UpdateModule):
         )
 
         self.loss_fn = torch.nn.MSELoss()
-        self.lamb = l1_loss_coeff
+        self.num_classes = num_classes
+        self.margin = margin
 
     def _calculate_loss(self, x, y_target):
-        y_predict = self(x)
-        recon_loss = self.loss_fn(y_predict, y_target)
+        embedding = self(x)
+        l2_embedding = torch.divide(
+            embedding, embedding.square().sum(1, keepdim=True).sqrt()
+        )
+        y_target_one_hot = torch.nn.functional.one_hot(
+            y_target, self.num_classes
+        ).type_as(x)
 
-        sparse_weights = self.network.return_sparse_weights()
-        l1_loss = sparse_weights.abs().mean()
+        pairwise_distance = 1 - torch.matmul(l2_embedding, l2_embedding.t())
 
-        return recon_loss + self.lamb * l1_loss
+        eye = torch.eye(y_target_one_hot.shape[0]).type_as(y_target_one_hot)
+        neg_labels = (
+            1 - torch.matmul(y_target_one_hot, y_target_one_hot.t()) + eye
+        )
+
+        easy_positives = (pairwise_distance + 2 * neg_labels).min(
+            1, keepdim=True
+        )[0]
+        combi = (
+            easy_positives.tile([1, pairwise_distance.shape[1]])
+            - pairwise_distance
+            + self.margin
+        )
+
+        loss_mat = combi * neg_labels * (1 - eye)
+        hinge = torch.maximum(loss_mat, torch.zeros_like(loss_mat))
+
+        return hinge.sum() / max(1, hinge.count_nonzero())
 
     def training_step(self, batch, batch_idx):
         x, y_target = batch
