@@ -50,6 +50,8 @@ class MLPBlock(nn.Module):
 
         flat_output_dim = int(torch.tensor(output_shape).prod().numpy())
 
+        if len(out_chans_per_layer) == 0:
+            out_features = in_features
         self.block.append(
             nn.Linear(out_features, flat_output_dim, bias=use_output_bias)
         )

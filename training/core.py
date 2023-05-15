@@ -10,6 +10,12 @@ from pytorch_lightning import LightningDataModule, LightningModule
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 from ray.tune.integration.pytorch_lightning import TuneReportCallback
 
+from training.callbacks import (
+    TrainingEpochEnd,
+    ValidationEpochEnd,
+    TestEpochEnd,
+)
+
 
 class LoaderModule(LightningDataModule):
     """
@@ -200,6 +206,11 @@ class UpdateModule(LightningModule):
         self.lr_scheduler_kwargs = lr_scheduler_kwargs
         self.early_stopping_kwargs = early_stopping_kwargs
 
+        # Add epoch level accumulators for step outputs
+        self.training_step_outputs = []
+        self.validation_step_outputs = []
+        self.test_step_outputs = []
+
     def forward(self, x):
         return self.network(x)
 
@@ -231,6 +242,9 @@ class UpdateModule(LightningModule):
                 TuneReportCallback("val_target", on="validation_end")
             )
         callbacks.append(ModelCheckpoint(**self.checkpoint_kwargs))
+        callbacks.append(TrainingEpochEnd())
+        callbacks.append(ValidationEpochEnd())
+        callbacks.append(TestEpochEnd())
 
         return callbacks
 
