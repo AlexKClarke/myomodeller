@@ -34,35 +34,20 @@ class SupervisedRegressor(UpdateModule):
         x, y_target = batch
         y_predict = self(x)
         loss = self.loss_fn(y_predict, y_target)
+        self.training_step_outputs.append({"training_loss": loss})
         return loss
-
-    def training_epoch_end(self, outputs):
-        average_loss = torch.stack([x["loss"] for x in outputs]).mean()
-        self.logger.experiment.add_scalar(
-            "training_loss", average_loss, self.current_epoch
-        )
 
     def validation_step(self, batch, batch_idx):
         x, y_target = batch
         y_predict = self(x)
         loss = self.loss_fn(y_predict, y_target)
         self.log("val_target", loss)
+        self.validation_step_outputs.append({"validation_loss": loss})
         return loss
-
-    def validation_epoch_end(self, outputs):
-        average_loss = torch.stack(outputs).mean()
-        self.logger.experiment.add_scalar(
-            "validation_loss", average_loss, self.current_epoch
-        )
 
     def test_step(self, batch, batch_idx):
         x, y_target = batch
         y_predict = self(x)
         loss = self.loss_fn(y_predict, y_target)
+        self.test_step_outputs.append({"test_loss": loss})
         return loss
-
-    def test_epoch_end(self, outputs):
-        average_loss = torch.stack(outputs).mean()
-        self.logger.experiment.add_scalar(
-            "test_loss", average_loss, self.current_epoch
-        )
