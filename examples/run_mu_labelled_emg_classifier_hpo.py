@@ -28,7 +28,6 @@ if __name__ == "__main__":
             "network_config": {
                 "network_name": "blocks.Conv1dBlock",
                 "network_kwargs": {
-                    "output_shape": [128],
                     "out_chans_per_layer": [32, 64, tune.choice([None, 128])],
                     "output_activation": None,
                     "kernel_size_per_layer": tune.randint(3, 40),

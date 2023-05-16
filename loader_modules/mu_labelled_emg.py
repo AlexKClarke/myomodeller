@@ -26,6 +26,8 @@ class MotorUnitLabelledEMG(LoaderModule):
             val_labels,
             test_emg,
             test_labels,
+            input_shape,
+            output_shape,
         ) = self._get_data(
             mat_path,
             half_window_size,
@@ -40,6 +42,8 @@ class MotorUnitLabelledEMG(LoaderModule):
             test_data=[test_emg, test_labels],
             batch_size=batch_size,
             weighted_sampler=weighted_sampler,
+            input_shape=input_shape,
+            output_shape=output_shape,
         )
 
     def _get_data(
@@ -129,4 +133,6 @@ class MotorUnitLabelledEMG(LoaderModule):
             val_labels,
             test_emg,
             test_labels,
+            train_emg.shape[1:],
+            [len(stamps) + 1],
         )

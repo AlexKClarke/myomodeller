@@ -33,6 +33,8 @@ class MNIST(LoaderModule):
             val_data=[val_images, val_images if auto else val_labels],
             test_data=[test_images, test_images if auto else test_labels],
             batch_size=batch_size,
+            input_shape=[1, 8, 8],
+            output_shape=[10],
         )
 
     def _get_data(self, one_hot_labels):
