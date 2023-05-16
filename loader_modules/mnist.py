@@ -1,4 +1,6 @@
 from sklearn.datasets import load_digits
+from torch.nn.functional import one_hot
+import numpy as np
 
 from training import LoaderModule
 from loader_modules.utils import (
@@ -11,7 +13,12 @@ from loader_modules.utils import (
 class MNIST(LoaderModule):
     """Loader module that retrieves sklearn's MNIST set"""
 
-    def __init__(self, batch_size: int = 64, auto: bool = False):
+    def __init__(
+        self,
+        batch_size: int = 64,
+        auto: bool = False,
+        one_hot_labels: bool = True,
+    ):
         (
             train_images,
             train_labels,
@@ -19,7 +26,7 @@ class MNIST(LoaderModule):
             val_labels,
             test_images,
             test_labels,
-        ) = self._get_data()
+        ) = self._get_data(one_hot_labels)
 
         super().__init__(
             train_data=[train_images, train_images if auto else train_labels],
@@ -28,7 +35,7 @@ class MNIST(LoaderModule):
             batch_size=batch_size,
         )
 
-    def _get_data(self):
+    def _get_data(self, one_hot_labels):
         """Loads MNIST digits from scikit.datasets"""
 
         # sklearn flattens the images for some reason so also need to reshape
@@ -52,6 +59,13 @@ class MNIST(LoaderModule):
         ) = [
             array_to_tensor(data) for data in [train_data, val_data, test_data]
         ]
+
+        # One hot labels if needed
+        if one_hot_labels:
+            [train_labels, val_labels, test_labels] = [
+                one_hot(label, np.unique(labels).shape[0])
+                for label in [train_labels, val_labels, test_labels]
+            ]
 
         # Z-score standardise image sets with statistics from train set
         mean, std = train_images.mean(), train_images.std()

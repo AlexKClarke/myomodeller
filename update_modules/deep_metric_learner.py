@@ -11,7 +11,6 @@ class DeepMetricLearner(UpdateModule):
     def __init__(
         self,
         network,
-        num_classes: int,
         hpo_mode: bool = False,
         maximize_val_target: bool = True,
         optimizer: str = "AdamW",
@@ -31,7 +30,6 @@ class DeepMetricLearner(UpdateModule):
         )
 
         self.loss_fn = torch.nn.MSELoss()
-        self.num_classes = num_classes
         self.margin = margin
 
     def _calculate_loss(self, x, y_target):
@@ -39,16 +37,11 @@ class DeepMetricLearner(UpdateModule):
         l2_embedding = torch.divide(
             embedding, embedding.square().sum(1, keepdim=True).sqrt()
         )
-        y_target_one_hot = torch.nn.functional.one_hot(
-            y_target, self.num_classes
-        ).type_as(x)
-
+        y_target = y_target.type_as(x)
         pairwise_distance = 1 - torch.matmul(l2_embedding, l2_embedding.t())
 
-        eye = torch.eye(y_target_one_hot.shape[0]).type_as(y_target_one_hot)
-        neg_labels = (
-            1 - torch.matmul(y_target_one_hot, y_target_one_hot.t()) + eye
-        )
+        eye = torch.eye(y_target.shape[0]).type_as(y_target)
+        neg_labels = 1 - torch.matmul(y_target, y_target.t()) + eye
 
         easy_positives = (pairwise_distance + 2 * neg_labels).min(
             1, keepdim=True
