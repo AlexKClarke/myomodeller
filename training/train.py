@@ -143,9 +143,16 @@ class TrainingModule:
         # Add network input shape if missing
         network_config = config["update_module_config"]["network_config"]
         if "input_shape" not in network_config["network_kwargs"]:
-            input_shape = next(iter(loader_module.train_dataloader()))[
-                0
-            ].shape[1:]
+            if loader_module.train_data_present:
+                input_shape = (
+                    loader_module.train_dataloader().dataset[0][0].shape
+                )
+            elif loader_module.test_data_present:
+                input_shape = (
+                    loader_module.test_dataloader().dataset[0][0].shape
+                )
+            else:
+                raise ValueError("No data in train or test dataloaders.")
             network_config["network_kwargs"]["input_shape"] = input_shape
 
         # The update module also needs a hpo_flag if in hpo mode as this will
@@ -160,9 +167,16 @@ class TrainingModule:
 
         # The update module needs an example sample from the loader module
         # as this is used to build the network graph
-        update_module.example_input_array = next(
-            iter(loader_module.train_dataloader())
-        )[0]
+        if loader_module.train_data_present:
+            update_module.example_input_array = (
+                loader_module.train_dataloader().dataset[0][0]
+            ).unsqueeze(0)
+        elif loader_module.test_data_present:
+            update_module.example_input_array = (
+                loader_module.test_dataloader().dataset[0][0]
+            ).unsqueeze(0)
+        else:
+            raise ValueError("No data in train or test dataloaders.")
 
         # Create the trainer kwargs dict if it does not already exist and then
         # add a few good default arguments if these are not specified
@@ -173,7 +187,7 @@ class TrainingModule:
             key: (val if key not in trainer_kwargs else trainer_kwargs[key])
             for key, val in zip(
                 ["accelerator", "devices", "max_epochs", "log_every_n_steps"],
-                ["gpu", 1, 500, 1],
+                ["gpu", 1, 5000, 1],
             )
         }
 

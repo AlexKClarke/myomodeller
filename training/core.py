@@ -4,7 +4,7 @@ subclasses in loader and update subclasses"""
 from typing import Dict, Optional, Sequence
 
 import torch
-from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import DataLoader, TensorDataset, WeightedRandomSampler
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from pytorch_lightning import LightningDataModule, LightningModule
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
@@ -49,6 +49,7 @@ class LoaderModule(LightningDataModule):
         val_data: Sequence[torch.Tensor],
         test_data: Optional[Sequence[torch.Tensor]] = None,
         batch_size: int = 64,
+        weighted_sampler: bool = False,
     ):
         super().__init__()
 
@@ -71,17 +72,44 @@ class LoaderModule(LightningDataModule):
             self.test_data_present = True
 
         self.batch_size = batch_size
+        self.weighted_sampler = weighted_sampler
+        if weighted_sampler:
+            self.train_sampler = self._generate_weighted_sampler(
+                train_data[1], batch_size
+            )
+            self.val_sampler = self._generate_weighted_sampler(
+                val_data[1], batch_size
+            )
+        else:
+            self.train_sampler, self.val_sampler = None, None
+
+    def _generate_weighted_sampler(self, labels, batch_size):
+        assert (
+            labels.dtype == torch.int64
+        ), "If using weighted sampler the labels must be torch.int64"
+
+        if len(labels.shape) == 2:
+            labels = labels.argmax(1)
+
+        weights = torch.ones(labels.shape[0])
+        for c in labels.unique():
+            locs = torch.where(labels == c)[0]
+            weights[locs] = labels.shape[0] / locs.shape[0]
+
+        return WeightedRandomSampler(weights, batch_size)
 
     def train_dataloader(self):
         return DataLoader(
             self.train_dataset,
             batch_size=self.batch_size,
+            sampler=self.train_sampler,
         )
 
     def val_dataloader(self):
         return DataLoader(
             self.val_dataset,
             batch_size=self.batch_size,
+            sampler=self.val_sampler,
         )
 
     def test_dataloader(self):
@@ -188,9 +216,9 @@ class UpdateModule(LightningModule):
 
         # If not defined, set patience on scheduler and/or early stopper
         if "patience" not in lr_scheduler_kwargs:
-            lr_scheduler_kwargs["patience"] = 10
+            lr_scheduler_kwargs["patience"] = 100
         if "patience" not in early_stopping_kwargs:
-            early_stopping_kwargs["patience"] = 20
+            early_stopping_kwargs["patience"] = 200
 
         # Check to make sure early stop will not interrupt scheduler
         assert (

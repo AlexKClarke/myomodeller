@@ -50,6 +50,8 @@ class ConvTranspose1dBlock(nn.Module):
         """
         super().__init__()
 
+        out_chans_per_layer = [c for c in out_chans_per_layer if c]
+
         num_layers = len(out_chans_per_layer)
 
         if type(kernel_size_per_layer) == int:
@@ -164,6 +166,8 @@ class ConvTranspose2dBlock(nn.Module):
                 Defaults to None.
         """
         super().__init__()
+
+        out_chans_per_layer = [c for c in out_chans_per_layer if c]
 
         num_layers = len(out_chans_per_layer)
 

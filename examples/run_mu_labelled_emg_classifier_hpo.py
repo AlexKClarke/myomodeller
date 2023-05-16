@@ -1,7 +1,8 @@
-"""Example of training a 2D convolutional neural network to classify 
-8x8 MNIST images"""
+"""Example of training a 1D convolutional neural network to learn a classifier
+ on MU labelled EMG"""
 
 import os, sys
+from ray import tune
 
 if os.path.basename(os.getcwd()) != "pyrepo":
     os.chdir("..")
@@ -14,27 +15,37 @@ if __name__ == "__main__":
     # at run time. The training module will look in the loader_modules
     # and update_modules __init__.py for the named modules and then pass
     training_module_config = {
-        "log_name": "mnist_classifier",
+        "log_name": "mu_labelled_emg_classifier",
+        "hpo_mode": True,
+        "num_hpo_trials": 5,
         "update_module_config": {
             "update_module_name": "SupervisedClassifier",
             "update_module_kwargs": {
                 "optimizer": "AdamW",
-                "optimizer_kwargs": {"lr": 0.001},
+                "optimizer_kwargs": {"lr": tune.loguniform(1e-5, 1e-3)},
             },
             "maximize_val_target": True,
             "network_config": {
-                "network_name": "blocks.Conv2dBlock",
+                "network_name": "blocks.Conv1dBlock",
                 "network_kwargs": {
-                    "input_shape": [1, 8, 8],
-                    "output_shape": [10],
-                    "out_chans_per_layer": [32, 64],
+                    "output_shape": [128],
+                    "out_chans_per_layer": [32, 64, tune.choice([None, 128])],
                     "output_activation": None,
+                    "kernel_size_per_layer": tune.randint(3, 40),
                 },
             },
         },
         "loader_module_config": {
-            "loader_module_name": "MNIST",
-            "loader_module_kwargs": {"batch_size": 64},
+            "loader_module_name": "MotorUnitLabelledEMG",
+            "loader_module_kwargs": {
+                "mat_path": "path",  # [enter absolute path to Demuse file here]
+                "half_window_size": tune.randint(50, 100),
+                "test_fraction": 0.2,
+                "group_size": 100,
+                "batch_size": 512,
+                "one_hot_labels": False,
+                "weighted_sampler": True,
+            },
         },
     }
 
