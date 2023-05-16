@@ -17,7 +17,7 @@ class MNIST(LoaderModule):
         self,
         batch_size: int = 64,
         auto: bool = False,
-        one_hot_labels: bool = True,
+        one_hot_labels: bool = False,
     ):
         (
             train_images,

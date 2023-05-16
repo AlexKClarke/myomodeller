@@ -46,6 +46,8 @@ class MLPSparseAutoencoder(nn.Module):
         """
         super().__init__()
 
+        out_chans_per_layer = [c for c in out_chans_per_layer if c]
+
         self.encoder = MLPBlock(
             input_shape=input_shape,
             output_shape=[sparse_dim],
@@ -114,6 +116,8 @@ class Conv1dSparseAutoencoder(nn.Module):
                 Defaults to identity.
         """
         super().__init__()
+
+        out_chans_per_layer = [c for c in out_chans_per_layer if c]
 
         self.encoder = Conv1dBlock(
             input_shape=input_shape,
@@ -192,6 +196,8 @@ class Conv2dSparseAutoencoder(nn.Module):
                 Defaults to identity
         """
         super().__init__()
+
+        out_chans_per_layer = [c for c in out_chans_per_layer if c]
 
         self.encoder = Conv2dBlock(
             input_shape=input_shape,

@@ -38,6 +38,8 @@ class MLPBlock(nn.Module):
         """
         super().__init__()
 
+        out_chans_per_layer = [c for c in out_chans_per_layer if c]
+
         self.block = nn.ModuleList()
 
         in_features = input_shape[-1]
@@ -111,6 +113,8 @@ class Conv1dBlock(nn.Module):
                 Whether to use bias on output layer
         """
         super().__init__()
+
+        out_chans_per_layer = [c for c in out_chans_per_layer if c]
 
         num_layers = len(out_chans_per_layer)
 
@@ -208,6 +212,8 @@ class Conv2dBlock(nn.Module):
         """
 
         super().__init__()
+
+        out_chans_per_layer = [c for c in out_chans_per_layer if c]
 
         num_layers = len(out_chans_per_layer)
 
