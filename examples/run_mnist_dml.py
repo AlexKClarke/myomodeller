@@ -18,7 +18,6 @@ if __name__ == "__main__":
         "update_module_config": {
             "update_module_name": "DeepMetricLearner",
             "update_module_kwargs": {
-                "num_classes": 10,
                 "margin": 0.1,
                 "optimizer": "AdamW",
                 "optimizer_kwargs": {"lr": 0.001},
@@ -27,7 +26,6 @@ if __name__ == "__main__":
             "network_config": {
                 "network_name": "blocks.Conv2dBlock",
                 "network_kwargs": {
-                    "input_shape": [1, 8, 8],
                     "output_shape": [128],
                     "out_chans_per_layer": [32, 64],
                     "output_activation": None,
@@ -36,7 +34,10 @@ if __name__ == "__main__":
         },
         "loader_module_config": {
             "loader_module_name": "MNIST",
-            "loader_module_kwargs": {"batch_size": 256},
+            "loader_module_kwargs": {
+                "batch_size": 256,
+                "one_hot_labels": True,
+            },
         },
     }
 

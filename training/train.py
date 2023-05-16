@@ -49,7 +49,6 @@ class TrainingModule:
         self,
         config: Union[Dict, str],
     ):
-
         # Detect if config is a dict or a json path
         if isinstance(config, str):
             with open(config, "r") as file:
@@ -140,6 +139,14 @@ class TrainingModule:
         loader_module = process_loader_module_config(
             config["loader_module_config"]
         )
+
+        # Add network input shape if missing
+        network_config = config["update_module_config"]["network_config"]
+        if "input_shape" not in network_config["network_kwargs"]:
+            input_shape = next(iter(loader_module.train_dataloader()))[
+                0
+            ].shape[1:]
+            network_config["network_kwargs"]["input_shape"] = input_shape
 
         # The update module also needs a hpo_flag if in hpo mode as this will
         # be used to add a ray tune callback to the callbacks list
