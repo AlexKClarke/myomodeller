@@ -140,20 +140,22 @@ class TrainingModule:
             config["loader_module_config"]
         )
 
-        # Add network input shape if missing
+        # Add network input and output shape from loader if not in config
         network_config = config["update_module_config"]["network_config"]
         if "input_shape" not in network_config["network_kwargs"]:
-            if loader_module.train_data_present:
-                input_shape = (
-                    loader_module.train_dataloader().dataset[0][0].shape
-                )
-            elif loader_module.test_data_present:
-                input_shape = (
-                    loader_module.test_dataloader().dataset[0][0].shape
-                )
-            else:
-                raise ValueError("No data in train or test dataloaders.")
-            network_config["network_kwargs"]["input_shape"] = input_shape
+            assert (
+                loader_module.input_shape is not None
+            ), "input_shape must be defined in loader or config"
+            network_config["network_kwargs"][
+                "input_shape"
+            ] = loader_module.input_shape
+        if "output_shape" not in network_config["network_kwargs"]:
+            assert (
+                loader_module.output_shape is not None
+            ), "output_shape must be defined in loader or config"
+            network_config["network_kwargs"][
+                "output_shape"
+            ] = loader_module.output_shape
 
         # The update module also needs a hpo_flag if in hpo mode as this will
         # be used to add a ray tune callback to the callbacks list

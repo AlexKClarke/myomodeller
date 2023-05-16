@@ -50,6 +50,8 @@ class LoaderModule(LightningDataModule):
         test_data: Optional[Sequence[torch.Tensor]] = None,
         batch_size: int = 64,
         weighted_sampler: bool = False,
+        input_shape: Optional[Sequence[int]] = None,
+        output_shape: Optional[Sequence[int]] = None,
     ):
         super().__init__()
 
@@ -82,6 +84,9 @@ class LoaderModule(LightningDataModule):
             )
         else:
             self.train_sampler, self.val_sampler = None, None
+
+        self.input_shape = input_shape
+        self.output_shape = output_shape
 
     def _generate_weighted_sampler(self, labels, batch_size):
         assert (
