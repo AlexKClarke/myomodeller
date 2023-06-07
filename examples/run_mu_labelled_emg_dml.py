@@ -22,7 +22,7 @@ if __name__ == "__main__":
                 "optimizer": "AdamW",
                 "optimizer_kwargs": {"lr": 0.0001},
             },
-            "maximize_val_target": True,
+            "maximize_val_target": False,
             "network_config": {
                 "network_name": "blocks.Conv1dBlock",
                 "network_kwargs": {
@@ -43,6 +43,7 @@ if __name__ == "__main__":
                 "batch_size": 512,
                 "one_hot_labels": True,
                 "weighted_sampler": True,
+                "flatten_samples": False,
             },
         },
     }

@@ -18,6 +18,7 @@ class MotorUnitLabelledEMG(LoaderModule):
         one_hot_labels: bool = False,
         batch_size: int = 64,
         weighted_sampler: bool = True,
+        flatten_samples: bool = False,
     ):
         (
             train_emg,
@@ -34,6 +35,7 @@ class MotorUnitLabelledEMG(LoaderModule):
             test_fraction,
             group_size,
             one_hot_labels,
+            flatten_samples,
         )
 
         super().__init__(
@@ -53,6 +55,7 @@ class MotorUnitLabelledEMG(LoaderModule):
         test_fraction,
         group_size,
         one_hot_labels,
+        flatten_samples,
     ):
         """Loads paired EMG and MUs from demuse file"""
 
@@ -89,6 +92,9 @@ class MotorUnitLabelledEMG(LoaderModule):
             ]
         ).permute([1, 2, 0])
 
+        if flatten_samples:
+            emg = emg.flatten(1)
+
         # Split out train, val and test sets using grouped k fold
         train_data, test_data = split_array_by_indices(
             (emg, labels),
@@ -120,8 +126,8 @@ class MotorUnitLabelledEMG(LoaderModule):
             ]
 
         # Z-score standardise emg sets with statistics from train set
-        mean = train_emg.mean((0, 2), keepdims=True)
-        std = train_emg.std((0, 2), keepdims=True)
+        mean = train_emg.mean((0, -1), keepdims=True)
+        std = train_emg.std((0, -1), keepdims=True)
         [train_emg, val_emg, test_emg] = [
             ((e - mean) / std) for e in [train_emg, val_emg, test_emg]
         ]

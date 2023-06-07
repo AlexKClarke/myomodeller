@@ -135,7 +135,11 @@ class Conv1dBlock(nn.Module):
         time_dim = input_shape[1]
         for _, kernel_size, stride in params_per_layer:
             time_dim = ((time_dim - kernel_size) // stride) + 1
-        flat_conv_dim = time_dim * out_chans_per_layer[-1]
+
+        if len(out_chans_per_layer) == 0:
+            flat_conv_dim = time_dim * input_shape[0]
+        else:
+            flat_conv_dim = time_dim * out_chans_per_layer[-1]
 
         self.block = nn.ModuleList()
 
@@ -239,7 +243,11 @@ class Conv2dBlock(nn.Module):
         for _, kernel_size, stride in params_per_layer:
             h_dim = ((h_dim - kernel_size[0]) // stride[0]) + 1
             w_dim = ((w_dim - kernel_size[1]) // stride[1]) + 1
-        flat_conv_dim = h_dim * w_dim * out_chans_per_layer[-1]
+
+        if len(out_chans_per_layer) == 0:
+            flat_conv_dim = h_dim * w_dim * input_shape[0]
+        else:
+            flat_conv_dim = h_dim * w_dim * out_chans_per_layer[-1]
 
         self.block = nn.ModuleList()
 
