@@ -44,6 +44,7 @@ if __name__ == "__main__":
                 "batch_size": 512,
                 "one_hot_labels": False,
                 "weighted_sampler": True,
+                "flatten_samples": False,
             },
         },
     }
