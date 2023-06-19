@@ -276,7 +276,7 @@ class TrainingModule:
 
         # Delete the temp folder created by tune after waiting for processes
         # to finish
-        time.sleep(1)
+        time.sleep(10)
         if os.path.isdir("tune_temp"):
             shutil.rmtree("tune_temp")
 
