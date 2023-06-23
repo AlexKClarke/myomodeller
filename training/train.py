@@ -274,12 +274,6 @@ class TrainingModule:
         best_config["hpo_version"] = analysis.trials.index(analysis.best_trial)
         self._dump_config(best_config, best=True)
 
-        # Delete the temp folder created by tune after waiting for processes
-        # to finish
-        time.sleep(10)
-        if os.path.isdir("tune_temp"):
-            shutil.rmtree("tune_temp")
-
     def train(self) -> None:
         """Runs either a single lightning training session or multiple
         depending on the hpo_mode flag in the config"""
