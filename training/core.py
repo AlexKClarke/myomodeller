@@ -50,6 +50,8 @@ class LoaderModule(LightningDataModule):
         test_data: Optional[Sequence[torch.Tensor]] = None,
         batch_size: int = 64,
         weighted_sampler: bool = False,
+        train_sample_weighting: float = 1.0,
+        test_sample_weighting: float = 1.0,
         input_shape: Optional[Sequence[int]] = None,
         output_shape: Optional[Sequence[int]] = None,
     ):
@@ -77,18 +79,28 @@ class LoaderModule(LightningDataModule):
         self.weighted_sampler = weighted_sampler
         if weighted_sampler:
             self.train_sampler = self._generate_weighted_sampler(
-                train_data[1], batch_size
+                train_data[1], batch_size, train_sample_weighting
             )
             self.val_sampler = self._generate_weighted_sampler(
-                val_data[1], batch_size
+                val_data[1], batch_size, test_sample_weighting
+            )
+            self.test_sampler = self._generate_weighted_sampler(
+                val_data[1], batch_size, test_sample_weighting
             )
         else:
-            self.train_sampler, self.val_sampler = None, None
+            self.train_sampler = None
+            self.val_sampler = None
+            self.test_sampler = None
 
         self.input_shape = input_shape
         self.output_shape = output_shape
 
-    def _generate_weighted_sampler(self, labels, batch_size):
+    def _generate_weighted_sampler(
+        self,
+        labels: torch.Tensor,
+        batch_size: int,
+        rare_sample_weighting: float = 1.0,
+    ):
         assert (
             labels.dtype == torch.int64
         ), "If using weighted sampler the labels must be torch.int64"
@@ -99,7 +111,10 @@ class LoaderModule(LightningDataModule):
         weights = torch.ones(labels.shape[0])
         for c in labels.unique():
             locs = torch.where(labels == c)[0]
-            weights[locs] = labels.shape[0] / locs.shape[0]
+            occurrence = labels.shape[0] / locs.shape[0]
+            weights[locs] = rare_sample_weighting * occurrence + (
+                1 - rare_sample_weighting
+            )
 
         return WeightedRandomSampler(weights, batch_size)
 
@@ -121,6 +136,7 @@ class LoaderModule(LightningDataModule):
         return DataLoader(
             self.test_dataset,
             batch_size=self.batch_size,
+            sampler=self.test_sampler,
         )
 
 

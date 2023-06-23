@@ -18,6 +18,8 @@ class MotorUnitLabelledEMG(LoaderModule):
         one_hot_labels: bool = False,
         batch_size: int = 64,
         weighted_sampler: bool = True,
+        train_sample_weighting: float = 1.0,
+        test_sample_weighting: float = 1.0,
         flatten_samples: bool = False,
     ):
         (
@@ -44,6 +46,8 @@ class MotorUnitLabelledEMG(LoaderModule):
             test_data=[test_emg, test_labels],
             batch_size=batch_size,
             weighted_sampler=weighted_sampler,
+            train_sample_weighting=train_sample_weighting,
+            test_sample_weighting=test_sample_weighting,
             input_shape=input_shape,
             output_shape=output_shape,
         )
