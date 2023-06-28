@@ -19,16 +19,16 @@ if __name__ == "__main__":
             "update_module_name": "DeepMetricLearner",
             "update_module_kwargs": {
                 "margin": 0.1,
+                "classifier_weighting": 0.1,
                 "optimizer": "AdamW",
                 "optimizer_kwargs": {"lr": 0.0001},
             },
             "maximize_val_target": False,
             "network_config": {
-                "network_name": "blocks.Conv1dBlock",
+                "network_name": "embedding.Conv1dEmbedding",
                 "network_kwargs": {
-                    "output_shape": [128],
+                    "embedding_dim": 128,
                     "out_chans_per_layer": [32, 64],
-                    "output_activation": None,
                     "kernel_size_per_layer": 5,
                 },
             },

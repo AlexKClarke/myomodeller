@@ -18,6 +18,7 @@ class DeepMetricLearner(UpdateModule):
         lr_scheduler_kwargs: Optional[Dict] = None,
         early_stopping_kwargs: Optional[Dict] = None,
         margin: float = 0.1,
+        classifier_weighting: float = 0.1,
     ):
         super().__init__(
             network,
@@ -29,16 +30,14 @@ class DeepMetricLearner(UpdateModule):
             early_stopping_kwargs,
         )
 
-        self.loss_fn = torch.nn.MSELoss()
+        self.loss_fn = torch.nn.CrossEntropyLoss()
         self.margin = margin
+        self.classifier_weighting = classifier_weighting
 
     def _calculate_loss(self, x, y_target):
         embedding = self(x)
-        l2_embedding = torch.divide(
-            embedding, embedding.square().sum(1, keepdim=True).sqrt()
-        )
         y_target = y_target.type_as(x)
-        pairwise_distance = 1 - torch.matmul(l2_embedding, l2_embedding.t())
+        pairwise_distance = 1 - torch.matmul(embedding, embedding.t())
 
         eye = torch.eye(y_target.shape[0]).type_as(y_target)
         neg_labels = 1 - torch.matmul(y_target, y_target.t()) + eye
@@ -54,8 +53,12 @@ class DeepMetricLearner(UpdateModule):
 
         loss_mat = combi * neg_labels * (1 - eye)
         hinge = torch.maximum(loss_mat, torch.zeros_like(loss_mat))
+        dml_loss = hinge.sum() / max(1, hinge.count_nonzero())
 
-        return hinge.sum() / max(1, hinge.count_nonzero())
+        classifier_output = self.network.classifier_output()
+        classifier_loss = self.loss_fn(classifier_output, y_target.argmax(1))
+
+        return dml_loss + self.classifier_weighting * classifier_loss
 
     def training_step(self, batch, batch_idx):
         x, y_target = batch
