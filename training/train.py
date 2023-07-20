@@ -2,9 +2,8 @@ from typing import Dict, Union, Optional
 
 import os
 import json
-import shutil
-import time
 
+import torch
 from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import TensorBoardLogger
 from ray import tune
@@ -131,9 +130,8 @@ class TrainingModule:
         ) as file:
             json.dump(config, file, indent=4)
 
-    def _run(self, config: Dict, test_mode=False) -> None:
-        """The internal train/test function which will create instances of the
-        modules from the config and then start a trainer instance."""
+    def _get_modules(self, config: Dict):
+        """Returns the loader and update modules from the config"""
 
         # Create the loader module from the config
         loader_module = process_loader_module_config(
@@ -166,6 +164,14 @@ class TrainingModule:
         update_module = process_update_module_config(
             config["update_module_config"]
         )
+
+        return loader_module, update_module
+
+    def _run(self, config: Dict, test_mode=False) -> None:
+        """The internal train/test function which will create instances of the
+        modules from the config and then start a trainer instance."""
+
+        loader_module, update_module = self._get_modules(config)
 
         # The update module needs an example sample from the loader module
         # as this is used to build the network graph
@@ -287,3 +293,19 @@ class TrainingModule:
         """Runs a test session and outputs a tensorboard file with results"""
 
         self._run(self.config, test_mode=True)
+
+    def get_inference_module(self):
+        """Returns the update module with checkpoint save_dict loaded"""
+
+        update_module = self._get_modules(self.config)[1]
+        assert (
+            "ckpt_path" in self.config
+        ), "Path to checkpoint file (ckpt_path) not specified."
+        assert (
+            self.config["ckpt_path"] is not None
+        ), "Path to checkpoint file (ckpt_path) not specified."
+
+        checkpoint = torch.load(self.config["ckpt_path"])
+        update_module.load_state_dict(checkpoint["state_dict"])
+
+        return update_module
