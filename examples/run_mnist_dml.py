@@ -23,7 +23,7 @@ if __name__ == "__main__":
                 "optimizer": "AdamW",
                 "optimizer_kwargs": {"lr": 0.001},
             },
-            "maximize_val_target": True,
+            "maximize_val_target": False,
             "network_config": {
                 "network_name": "embedding.Conv2dEmbedding",
                 "network_kwargs": {
