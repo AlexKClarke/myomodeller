@@ -78,16 +78,16 @@ class TrainingModule:
 
         self.log_name = self.config["log_name"]
 
-        self.whole_path = os.path.abspath(self.save_dir + "/" + self.log_name)
+        self.whole_path = os.path.abspath(os.path.join(self.save_dir, self.log_name))
 
     def _get_version(self) -> int:
         """Detects versioning in the specified file paths to avoid
         overwriting existing versions
         """
 
-        if os.path.exists(self.save_dir + "/" + self.log_name):
+        if os.path.exists(os.path.join(self.save_dir, self.log_name)):
             versions = []
-            for l in os.listdir(self.save_dir + "/" + self.log_name):
+            for l in os.listdir(os.path.join(self.save_dir, self.log_name)):
                 if l.startswith("version_"):
                     versions.append(int(l.split("_")[-1]))
             version_number = 0 if len(versions) == 0 else max(versions) + 1
@@ -112,7 +112,8 @@ class TrainingModule:
 
         path = self.whole_path
         if best is False:
-            path += "/version_" + str(version)
+            path = os.path.join(path, ("version_" + str(version)))
+            config["version"] = version
 
         if os.path.isdir(path) is False:
             os.makedirs(path)
@@ -124,9 +125,22 @@ class TrainingModule:
 
         filename = "best_config.json" if best else "config.json"
         with open(
-            os.path.abspath(path + "/" + filename), "w", encoding="utf-8"
+            os.path.abspath(os.path.join(path, filename)), "w", encoding="utf-8"
         ) as file:
             json.dump(config, file, indent=4)
+
+    def _add_ckpt_to_config(self, config: Dict) -> Dict:
+        """Adds the latest checkpoint file in the log to the config"""
+
+        ckpt_path = os.path.join(
+            self.whole_path, "version_" + str(config["version"]), "checkpoints"
+        )
+        assert os.path.exists(ckpt_path), "checkpoints folder not in log"
+        ckpt_files = [os.path.join(ckpt_path, file) for file in os.listdir(ckpt_path)]
+        if len(ckpt_files) != 0:
+            config["ckpt_path"] = max(ckpt_files, key=os.path.getctime)
+
+        return config
 
     def _get_modules(self, config: Dict):
         """Returns the loader and update modules from the config"""
@@ -234,6 +248,11 @@ class TrainingModule:
                 ckpt_path=ckpt_path,
             )
 
+        # Add latest ckpt path to config
+        if test_mode is False:
+            config = self._add_ckpt_to_config(config)
+            self._dump_config(config, config["version"])
+
     def _hpo(self) -> None:
         """Internal hyperparameter optimisation using ray tune"""
 
@@ -246,7 +265,7 @@ class TrainingModule:
 
         # Set the number of tune HPO trials
         if "num_hpo_trials" not in self.config:
-            num_samples = 15
+            num_samples = 10
         else:
             num_samples = self.config["num_hpo_trials"]
 
@@ -268,7 +287,8 @@ class TrainingModule:
         # which version folder was the best, in case we want to use the
         # checkpoints in that folder
         best_config = analysis.best_config
-        best_config["hpo_version"] = analysis.trials.index(analysis.best_trial)
+        best_config["version"] = analysis.trials.index(analysis.best_trial)
+        best_config = self._add_ckpt_to_config(best_config)
         self._dump_config(best_config, best=True)
 
     def train(self) -> None:
