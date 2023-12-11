@@ -78,16 +78,16 @@ class TrainingModule:
 
         self.log_name = self.config["log_name"]
 
-        self.whole_path = os.path.abspath(self.save_dir + "/" + self.log_name)
+        self.whole_path = os.path.abspath(os.path.join(self.save_dir, self.log_name))
 
     def _get_version(self) -> int:
         """Detects versioning in the specified file paths to avoid
         overwriting existing versions
         """
 
-        if os.path.exists(self.save_dir + "/" + self.log_name):
+        if os.path.exists(os.path.join(self.save_dir, self.log_name)):
             versions = []
-            for l in os.listdir(self.save_dir + "/" + self.log_name):
+            for l in os.listdir(os.path.join(self.save_dir, self.log_name)):
                 if l.startswith("version_"):
                     versions.append(int(l.split("_")[-1]))
             version_number = 0 if len(versions) == 0 else max(versions) + 1
@@ -108,13 +108,12 @@ class TrainingModule:
         """
 
         if version is None:
-            assert (
-                best
-            ), "Version number needed if not saving best config after HPO."
+            assert best, "Version number needed if not saving best config after HPO."
 
         path = self.whole_path
         if best is False:
-            path += "/version_" + str(version)
+            path = os.path.join(path, ("version_" + str(version)))
+            config["version"] = version
 
         if os.path.isdir(path) is False:
             os.makedirs(path)
@@ -126,17 +125,28 @@ class TrainingModule:
 
         filename = "best_config.json" if best else "config.json"
         with open(
-            os.path.abspath(path + "/" + filename), "w", encoding="utf-8"
+            os.path.abspath(os.path.join(path, filename)), "w", encoding="utf-8"
         ) as file:
             json.dump(config, file, indent=4)
+
+    def _add_ckpt_to_config(self, config: Dict) -> Dict:
+        """Adds the latest checkpoint file in the log to the config"""
+
+        ckpt_path = os.path.join(
+            self.whole_path, "version_" + str(config["version"]), "checkpoints"
+        )
+        assert os.path.exists(ckpt_path), "checkpoints folder not in log"
+        ckpt_files = [os.path.join(ckpt_path, file) for file in os.listdir(ckpt_path)]
+        if len(ckpt_files) != 0:
+            config["ckpt_path"] = max(ckpt_files, key=os.path.getctime)
+
+        return config
 
     def _get_modules(self, config: Dict):
         """Returns the loader and update modules from the config"""
 
         # Create the loader module from the config
-        loader_module = process_loader_module_config(
-            config["loader_module_config"]
-        )
+        loader_module = process_loader_module_config(config["loader_module_config"])
 
         # Add network input and output shape from loader if not in config
         network_config = config["update_module_config"]["network_config"]
@@ -144,9 +154,7 @@ class TrainingModule:
             assert (
                 loader_module.input_shape is not None
             ), "input_shape must be defined in loader or config"
-            network_config["network_kwargs"][
-                "input_shape"
-            ] = loader_module.input_shape
+            network_config["network_kwargs"]["input_shape"] = loader_module.input_shape
         if "output_shape" not in network_config["network_kwargs"]:
             assert (
                 loader_module.output_shape is not None
@@ -161,9 +169,7 @@ class TrainingModule:
             config["update_module_config"]["hpo_mode"] = True
 
         # Create the update module from the config
-        update_module = process_update_module_config(
-            config["update_module_config"]
-        )
+        update_module = process_update_module_config(config["update_module_config"])
 
         return loader_module, update_module
 
@@ -222,8 +228,7 @@ class TrainingModule:
             ), "Loader module needs test data for test mode."
         else:
             assert (
-                loader_module.train_data_present
-                and loader_module.val_data_present
+                loader_module.train_data_present and loader_module.val_data_present
             ), "Loader module needs train and validation data for train mode."
 
         # Begin training if not in test mode
@@ -242,6 +247,11 @@ class TrainingModule:
                 dataloaders=loader_module,
                 ckpt_path=ckpt_path,
             )
+
+        # Add latest ckpt path to config
+        if test_mode is False:
+            config = self._add_ckpt_to_config(config)
+            self._dump_config(config, config["version"])
 
     def _hpo(self) -> None:
         """Internal hyperparameter optimisation using ray tune"""
@@ -277,7 +287,8 @@ class TrainingModule:
         # which version folder was the best, in case we want to use the
         # checkpoints in that folder
         best_config = analysis.best_config
-        best_config["hpo_version"] = analysis.trials.index(analysis.best_trial)
+        best_config["version"] = analysis.trials.index(analysis.best_trial)
+        best_config = self._add_ckpt_to_config(best_config)
         self._dump_config(best_config, best=True)
 
     def train(self) -> None:
