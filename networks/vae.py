@@ -24,6 +24,7 @@ class MLPVariaionalAutoencoder(nn.Module):
         output_shape: Sequence[int],
         latent_dim: int,
         out_chans_per_layer: List[int],
+        num_sampling_draws: int,
         use_batch_norm: bool = True,
         encoder_output_activation: Optional[Type[nn.Module]] = None,
     ):
@@ -37,6 +38,8 @@ class MLPVariaionalAutoencoder(nn.Module):
                 The output shape of the data - [..., Feature]
             latent_dim (int):
                 The dimension of the sparse layer
+            num_sampling_draws (int):
+                Number of draws performed during sampling (reparametrization trick), for each data sample
             out_chans_per_layer (List[int]):
                 Number of hidden channels per layer, for example
                 [64, 32] would give two layers of hidden channel 64 then 32
@@ -63,7 +66,7 @@ class MLPVariaionalAutoencoder(nn.Module):
         out_chans_per_layer = out_chans_per_layer[::-1]
 
         self.decoder = MLPBlock(
-            input_shape=[latent_dim],
+            input_shape=[num_sampling_draws * latent_dim], # 1D, afe flattening the 2D output of the sampling function
             output_shape=output_shape,
             out_chans_per_layer=out_chans_per_layer,
             use_batch_norm=use_batch_norm,
@@ -71,22 +74,23 @@ class MLPVariaionalAutoencoder(nn.Module):
         )
 
     def sampling(self, z: torch.Tensor) -> torch.Tensor:
-        # retrieve latent dimensionality
-        latent_dim = z.shape[-1] // 2
         # retrieve mean and std
-        z_mu = z[:latent_dim]
-        z_std = z[latent_dim:]
+        z_mu = z[:self.latent_dim]
+        z_std = z[self.latent_dim:]
 
         # sampling from normal distribution
-        eps1 = torch.randn_like(z_std)
-        eps2 = torch.randn_like(z_std)
+        eps = torch.randn(self.num_sampling_draws, self.latent_dim)
+        z_mu_extended = z_mu.repeat(self.num_sampling_draws, 1)
+        z_std_extended = z_std.repeat(self.num_sampling_draws, 1)
 
-        # return sampled latents with reparametrization trick
-        return 0.5*((eps1 * z_std + z_mu) + (eps2 * z_std + z_mu))
+        # Returns a 2D tensor, of size (num_draws, latent_dim)
+        return eps * z_std_extended + z_mu_extended
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         z = self.sampling(self.encoder(x))
-        return self.decoder(z)
+
+        # z, initially 2D, is flattened in order to be given as input to the decoder
+        return self.decoder(z.flatten())
 
     def return_sparse_weights(self) -> torch.Tensor:
         return self.encoder.block[-3].weight
