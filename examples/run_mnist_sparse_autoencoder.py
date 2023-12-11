@@ -3,7 +3,7 @@
 
 import os, sys
 
-if os.path.basename(os.getcwd()) != "pyrepo":
+if os.path.basename(os.getcwd()) == "examples":
     os.chdir("..")
 sys.path.append(os.path.abspath(""))
 

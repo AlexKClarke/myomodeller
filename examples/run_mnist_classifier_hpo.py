@@ -11,7 +11,6 @@ sys.path.append(os.path.abspath(""))
 from training import TrainingModule
 
 if __name__ == "__main__":
-
     # When using the automatic hyperparameter optimisation, we need to
     # tell the hpo module what we want it to vary. This is done by replacing
     # values in the config with ray tune search space api functions

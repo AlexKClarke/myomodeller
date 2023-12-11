@@ -4,7 +4,7 @@
 import os, sys
 from ray import tune
 
-if os.path.basename(os.getcwd()) != "pyrepo":
+if os.path.basename(os.getcwd()) == "examples":
     os.chdir("..")
 sys.path.append(os.path.abspath(""))
 
