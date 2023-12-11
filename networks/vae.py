@@ -1,4 +1,6 @@
 """Deterministic autencoders which use a structural bottleneck
+
+test git changes
 """
 from typing import Sequence, Union, Optional, List, Type, Tuple
 import torch
