@@ -108,9 +108,7 @@ class TrainingModule:
         """
 
         if version is None:
-            assert (
-                best
-            ), "Version number needed if not saving best config after HPO."
+            assert best, "Version number needed if not saving best config after HPO."
 
         path = self.whole_path
         if best is False:
@@ -134,9 +132,7 @@ class TrainingModule:
         """Returns the loader and update modules from the config"""
 
         # Create the loader module from the config
-        loader_module = process_loader_module_config(
-            config["loader_module_config"]
-        )
+        loader_module = process_loader_module_config(config["loader_module_config"])
 
         # Add network input and output shape from loader if not in config
         network_config = config["update_module_config"]["network_config"]
@@ -144,9 +140,7 @@ class TrainingModule:
             assert (
                 loader_module.input_shape is not None
             ), "input_shape must be defined in loader or config"
-            network_config["network_kwargs"][
-                "input_shape"
-            ] = loader_module.input_shape
+            network_config["network_kwargs"]["input_shape"] = loader_module.input_shape
         if "output_shape" not in network_config["network_kwargs"]:
             assert (
                 loader_module.output_shape is not None
@@ -161,9 +155,7 @@ class TrainingModule:
             config["update_module_config"]["hpo_mode"] = True
 
         # Create the update module from the config
-        update_module = process_update_module_config(
-            config["update_module_config"]
-        )
+        update_module = process_update_module_config(config["update_module_config"])
 
         return loader_module, update_module
 
@@ -222,8 +214,7 @@ class TrainingModule:
             ), "Loader module needs test data for test mode."
         else:
             assert (
-                loader_module.train_data_present
-                and loader_module.val_data_present
+                loader_module.train_data_present and loader_module.val_data_present
             ), "Loader module needs train and validation data for train mode."
 
         # Begin training if not in test mode
@@ -255,7 +246,7 @@ class TrainingModule:
 
         # Set the number of tune HPO trials
         if "num_hpo_trials" not in self.config:
-            num_samples = 10
+            num_samples = 15
         else:
             num_samples = self.config["num_hpo_trials"]
 
