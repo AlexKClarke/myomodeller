@@ -17,12 +17,12 @@ from networks.transpose import (
 )
 
 
-class MLPSparseAutoencoder(nn.Module):
+class MLPVariaionalAutoencoder(nn.Module):
     def __init__(
         self,
         input_shape: Sequence[int],
         output_shape: Sequence[int],
-        sparse_dim: int,
+        latent_dim: int,
         out_chans_per_layer: List[int],
         use_batch_norm: bool = True,
         encoder_output_activation: Optional[Type[nn.Module]] = None,
@@ -35,7 +35,7 @@ class MLPSparseAutoencoder(nn.Module):
                 (Linear layers operate on the final dimension)
             output_shape (Sequence[int]):
                 The output shape of the data - [..., Feature]
-            sparse_dim (int):
+            latent_dim (int):
                 The dimension of the sparse layer
             out_chans_per_layer (List[int]):
                 Number of hidden channels per layer, for example
@@ -53,7 +53,7 @@ class MLPSparseAutoencoder(nn.Module):
 
         self.encoder = MLPBlock(
             input_shape=input_shape,
-            output_shape=[sparse_dim],
+            output_shape=[latent_dim * 2],
             out_chans_per_layer=out_chans_per_layer,
             use_batch_norm=use_batch_norm,
             output_activation=encoder_output_activation,
@@ -63,26 +63,41 @@ class MLPSparseAutoencoder(nn.Module):
         out_chans_per_layer = out_chans_per_layer[::-1]
 
         self.decoder = MLPBlock(
-            input_shape=[sparse_dim],
+            input_shape=[latent_dim],
             output_shape=output_shape,
             out_chans_per_layer=out_chans_per_layer,
             use_batch_norm=use_batch_norm,
             output_activation=encoder_output_activation,
         )
 
+    def sampling(self, z: torch.Tensor) -> torch.Tensor:
+        # retrieve latent dimensionality
+        latent_dim = z.shape[-1] // 2
+        # retrieve mean and std
+        z_mu = z[:latent_dim]
+        z_std = z[latent_dim:]
+
+        # sampling from normal distribution
+        eps1 = torch.randn_like(z_std)
+        eps2 = torch.randn_like(z_std)
+
+        # return sampled latents with reparametrization trick
+        return 0.5*((eps1 * z_std + z_mu) + (eps2 * z_std + z_mu))
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.decoder(self.encoder(x))
+        z = self.sampling(self.encoder(x))
+        return self.decoder(z)
 
     def return_sparse_weights(self) -> torch.Tensor:
         return self.encoder.block[-3].weight
 
 
-class Conv1dSparseAutoencoder(nn.Module):
+class Conv1dVariaionalAutoencoder(nn.Module):
     def __init__(
         self,
         input_shape: Sequence[int],
         output_shape: Sequence[int],
-        sparse_dim: int,
+        latent_dim: int,
         out_chans_per_layer: List[int],
         kernel_size_per_layer: Union[int, List[int]] = 3,
         stride_per_layer: Union[int, List[int]] = 1,
@@ -96,7 +111,7 @@ class Conv1dSparseAutoencoder(nn.Module):
                 The input shape of the data - [Channel, Time]
             output_shape (Sequence[int]):
                 The output shape of the data - [Channel, Time]
-            sparse_dim (int):
+            latent_dim (int):
                 The dimension of the sparse layer
             out_chans_per_layer (List[int]):
                 Number of hidden channels per layer, for example
@@ -124,7 +139,7 @@ class Conv1dSparseAutoencoder(nn.Module):
 
         self.encoder = Conv1dBlock(
             input_shape=input_shape,
-            output_shape=[sparse_dim],
+            output_shape=[latent_dim],
             out_chans_per_layer=out_chans_per_layer,
             kernel_size_per_layer=kernel_size_per_layer,
             stride_per_layer=stride_per_layer,
@@ -141,7 +156,7 @@ class Conv1dSparseAutoencoder(nn.Module):
             stride_per_layer = stride_per_layer[::-1]
 
         self.decoder = ConvTranspose1dBlock(
-            input_shape=[sparse_dim],
+            input_shape=[latent_dim],
             output_shape=output_shape,
             linear_out_chan=linear_out_chan,
             out_chans_per_layer=out_chans_per_layer,
@@ -157,7 +172,7 @@ class Conv1dSparseAutoencoder(nn.Module):
         return self.encoder.block[-3].weight
 
 
-class Conv2dSparseAutoencoder(nn.Module):
+class Conv2dVariaionalAutoencoder(nn.Module):
     def __init__(
         self,
         input_shape: Sequence[int],
