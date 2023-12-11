@@ -52,6 +52,11 @@ class MLPVariaionalAutoencoder(nn.Module):
         """
         super().__init__()
 
+        # to make them available in the following methods
+        self.latent_dim = latent_dim
+        self.num_sampling_draws = num_sampling_draws
+
+
         out_chans_per_layer = [c for c in out_chans_per_layer if c]
 
         self.encoder = MLPBlock(
@@ -84,13 +89,13 @@ class MLPVariaionalAutoencoder(nn.Module):
         z_std_extended = z_std.repeat(self.num_sampling_draws, 1)
 
         # Returns a 2D tensor, of size (num_draws, latent_dim)
-        return eps * z_std_extended + z_mu_extended
+        return eps * z_std_extended + z_mu_extended, z_mu, z_std
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        z = self.sampling(self.encoder(x))
+        z_expanded, z_mu, z_std = self.sampling(self.encoder(x))
 
         # z, initially 2D, is flattened in order to be given as input to the decoder
-        return self.decoder(z.flatten())
+        return self.decoder(z_expanded.flatten()), z_mu, z_std
 
     def return_sparse_weights(self) -> torch.Tensor:
         return self.encoder.block[-3].weight
@@ -183,6 +188,7 @@ class Conv2dVariaionalAutoencoder(nn.Module):
         output_shape: Sequence[int],
         sparse_dim: int,
         out_chans_per_layer: List[int],
+        num_sampling_draws: int,
         kernel_size_per_layer: Union[int, List[Tuple[int, int]]] = 3,
         stride_per_layer: Union[int, List[Tuple[int, int]]] = 1,
         use_batch_norm: bool = True,
@@ -223,7 +229,7 @@ class Conv2dVariaionalAutoencoder(nn.Module):
 
         self.encoder = Conv2dBlock(
             input_shape=input_shape,
-            output_shape=[sparse_dim],
+            output_shape=[sparse_dim * 2],
             out_chans_per_layer=out_chans_per_layer,
             kernel_size_per_layer=kernel_size_per_layer,
             stride_per_layer=stride_per_layer,
@@ -248,6 +254,8 @@ class Conv2dVariaionalAutoencoder(nn.Module):
             stride_per_layer=stride_per_layer,
             use_batch_norm=use_batch_norm,
         )
+
+
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.decoder(self.encoder(x))

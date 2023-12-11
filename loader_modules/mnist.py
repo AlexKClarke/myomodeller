@@ -18,7 +18,10 @@ class MNIST(LoaderModule):
         batch_size: int = 64,
         auto: bool = False,
         one_hot_labels: bool = False,
+        flatten_input: bool = False
     ):
+        self.flatten_input = flatten_input
+
         (
             train_images,
             train_labels,
@@ -37,6 +40,8 @@ class MNIST(LoaderModule):
             output_shape=[10],
         )
 
+
+
     def _get_data(self, one_hot_labels):
         """Loads MNIST digits from scikit.datasets"""
 
@@ -44,6 +49,10 @@ class MNIST(LoaderModule):
         images, labels = load_digits(return_X_y=True)
         images, labels = images.astype("float32"), labels.astype("int64")
         images = images.reshape((images.shape[0], 1, 8, 8))
+
+        # if flattening is necessary
+        if self.flatten_input == True:
+            images = images.reshape((images.shape[0], 1, 64))
 
         # Split out train, val and test sets
         train_data, test_data = split_array_by_indices(
