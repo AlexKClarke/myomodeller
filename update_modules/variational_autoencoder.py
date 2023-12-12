@@ -1,6 +1,7 @@
 from typing import Dict, Optional
 import torch
 from training import UpdateModule
+from torch.distributions import kl_divergence, Normal
 
 
 class VariationalAutoencoder(UpdateModule):
@@ -36,15 +37,13 @@ class VariationalAutoencoder(UpdateModule):
     def _calculate_loss(self, x, y_target):
         # y_target = x
         y_predict, mu, std = self(x)
+        prior_normal_distribution = Normal(torch.zeros(mu.shape()), torch.ones(std.shape))
+        posterior_distribution = self.network.multivariate_normal
 
         recon_loss = self.vae_rec_loss(y_predict, y_target, reduction='sum')
-        KL_div = -0.5 * torch.sum(1 + torch.log(std ** 2) - mu ** 2 - std ** 2)
+        kl_div = kl_divergence(posterior_distribution, prior_normal_distribution)
 
-        '''sparse_weights = self.network.return_sparse_weights()
-        l1_loss = sparse_weights.abs().mean()'''
-
-        #return recon_loss + self.lamb * l1_loss
-        return recon_loss + KL_div
+        return recon_loss + kl_div
 
     def training_step(self, batch, batch_idx):
         x, y_target = batch
