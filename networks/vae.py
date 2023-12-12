@@ -6,6 +6,8 @@ test git changes 2
 from typing import Sequence, Union, Optional, List, Type, Tuple
 import torch
 import torch.nn as nn
+from torch.distributions import MultivariateNormal
+
 from networks.blocks import (
     Conv1dBlock,
     Conv2dBlock,
@@ -16,6 +18,13 @@ from networks.transpose import (
     ConvTranspose2dBlock,
 )
 
+#print(torch.cuda.is_available())
+'''if torch.backends.mps.is_available():
+    mps_device = torch.device("mps")
+    x = torch.ones(1, device=mps_device)
+    print (x)
+else:
+    print ("MPS device not found.")'''
 
 class MLPVariaionalAutoencoder(nn.Module):
     def __init__(
@@ -27,6 +36,7 @@ class MLPVariaionalAutoencoder(nn.Module):
         num_sampling_draws: int,
         use_batch_norm: bool = True,
         encoder_output_activation: Optional[Type[nn.Module]] = None,
+
     ):
         """An MLP-based sparse autoencoder
 
@@ -52,9 +62,9 @@ class MLPVariaionalAutoencoder(nn.Module):
         """
         super().__init__()
 
-        # to make them available in the following methods
-        self.latent_dim = latent_dim
-        self.num_sampling_draws = num_sampling_draws
+        self.distribution_mean = torch.zeros(latent_dim)
+        self.covariance_matrix = torch.eye(latent_dim)
+        self.multivariate_normal = MultivariateNormal(self.distribution_mean, self.covariance_matrix)
 
 
         out_chans_per_layer = [c for c in out_chans_per_layer if c]
@@ -78,24 +88,23 @@ class MLPVariaionalAutoencoder(nn.Module):
             output_activation=encoder_output_activation,
         )
 
-    def sampling(self, z: torch.Tensor) -> torch.Tensor:
-        # retrieve mean and std
-        z_mu = z[:self.latent_dim]
-        z_std = z[self.latent_dim:]
+    def sampling(self, latent_dim, num_sampling_draws, z: torch.Tensor) -> torch.Tensor:
 
-        # sampling from normal distribution
-        eps = torch.randn(self.num_sampling_draws, self.latent_dim)
-        z_mu_extended = z_mu.repeat(self.num_sampling_draws, 1)
-        z_std_extended = z_std.repeat(self.num_sampling_draws, 1)
+        # mean and std of new sample
+        self.distribution_mean = z[:latent_dim]
+        self.covariance_matrix = torch.diag(z[latent_dim:]) # diagonal cov matrix
+        # update distribution
+        self.multivariate_normal = MultivariateNormal(self.distribution_mean, self.covariance_matrix)
+
 
         # Returns a 2D tensor, of size (num_draws, latent_dim)
-        return eps * z_std_extended + z_mu_extended, z_mu, z_std
+        return self.multivariate_normal.rsample((num_sampling_draws,)), self.distribution_mean, self.covariance_matrix
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        z_expanded, z_mu, z_std = self.sampling(self.encoder(x))
+    def forward(self, latent_dim, num_sampling_draws, x: torch.Tensor) -> torch.Tensor:
+        z, mu, std = self.sampling(latent_dim, num_sampling_draws, self.encoder(x))
 
         # z, initially 2D, is flattened in order to be given as input to the decoder
-        return self.decoder(z_expanded.flatten()), z_mu, z_std
+        return self.decoder(z.flatten()), mu, std
 
     def return_sparse_weights(self) -> torch.Tensor:
         return self.encoder.block[-3].weight
@@ -186,7 +195,7 @@ class Conv2dVariaionalAutoencoder(nn.Module):
         self,
         input_shape: Sequence[int],
         output_shape: Sequence[int],
-        sparse_dim: int,
+        latent_dim: int,
         out_chans_per_layer: List[int],
         num_sampling_draws: int,
         kernel_size_per_layer: Union[int, List[Tuple[int, int]]] = 3,
@@ -201,7 +210,7 @@ class Conv2dVariaionalAutoencoder(nn.Module):
                 The input shape of the data - [Channel, Height, Width]
             output_shape (Sequence[int]):
                 The output shape of the data - [Channel, Height, Width]
-            sparse_dim (int):
+            latent_dim (int):
                 The dimension of the sparse layer
             out_chans_per_layer (List[int]):
                 Number of hidden channels per layer, for example
@@ -225,11 +234,15 @@ class Conv2dVariaionalAutoencoder(nn.Module):
         """
         super().__init__()
 
+        # to make them available in the following methods
+        self.latent_dim = latent_dim
+        self.num_sampling_draws = num_sampling_draws
+
         out_chans_per_layer = [c for c in out_chans_per_layer if c]
 
         self.encoder = Conv2dBlock(
             input_shape=input_shape,
-            output_shape=[sparse_dim * 2],
+            output_shape=[latent_dim * 2],
             out_chans_per_layer=out_chans_per_layer,
             kernel_size_per_layer=kernel_size_per_layer,
             stride_per_layer=stride_per_layer,
@@ -246,7 +259,7 @@ class Conv2dVariaionalAutoencoder(nn.Module):
             stride_per_layer = stride_per_layer[::-1]
 
         self.decoder = ConvTranspose2dBlock(
-            input_shape=[sparse_dim],
+            input_shape=[latent_dim],
             output_shape=output_shape,
             linear_out_chan=linear_out_chan,
             out_chans_per_layer=out_chans_per_layer,
@@ -256,9 +269,27 @@ class Conv2dVariaionalAutoencoder(nn.Module):
         )
 
 
+    def sampling(self, z: torch.Tensor) -> torch.Tensor:
+        # retrieve mean and std
+        z_mu = z[:self.latent_dim]
+        z_std = z[self.latent_dim:]
+
+        # sampling from normal distribution
+        eps = torch.randn(self.num_sampling_draws, self.latent_dim)
+        z_mu_extended = z_mu.repeat(self.num_sampling_draws, 1)
+        z_std_extended = z_std.repeat(self.num_sampling_draws, 1)
+
+        # Returns a 2D tensor, of size (num_draws, latent_dim)
+        return eps * z_std_extended + z_mu_extended, z_mu, z_std
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.decoder(self.encoder(x))
+
+    '''def forward(self, x: torch.Tensor) -> torch.Tensor:
+        z_expanded, z_mu, z_std = self.sampling(self.encoder(x))
+
+        # z, initially 2D, is flattened in order to be given as input to the decoder
+        return self.decoder(z_expanded.flatten()), z_mu, z_std'''
 
     def return_sparse_weights(self) -> torch.Tensor:
         return self.encoder.block[-3].weight
