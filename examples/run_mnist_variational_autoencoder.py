@@ -14,7 +14,7 @@ if __name__ == "__main__":
     # at run time. The training module will look in the loader_modules
     # and update_modules __init__.py for the named modules and then pass
     training_module_config = {
-        "trainer_kwargs": {"accelerator": "cpu"},
+        #"trainer_kwargs": {"accelerator": "cpu"},
         "log_name": "mnist_vae",
         "update_module_config": {
             "update_module_name": "VariationalAutoencoder",
