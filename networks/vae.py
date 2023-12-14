@@ -100,8 +100,8 @@ class MLPVariationalAutoencoder(nn.Module):
     def decode(self, z: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """Return a reconstruction mean and covariance for a given input"""
 
-        x_mean = self.decoder(z)
-        return x_mean, self.recon_cov
+        recon_mean = self.decoder(z)
+        return recon_mean, self.recon_cov
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Reconstructs input for testing"""
