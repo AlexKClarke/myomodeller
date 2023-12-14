@@ -36,11 +36,13 @@ class VariationalAutoencoder(UpdateModule):
 
     def _calculate_loss(self, x, y_target):
         # y_target = x
-        y_predict, mu, std = self(x)
-        prior_normal_distribution = Normal(torch.zeros(mu.shape()), torch.ones(std.shape))
+        self.network.sample_posterior(x)
+        prior_normal_distribution = Normal(
+            torch.zeros(mu.shape()), torch.ones(std.shape)
+        )
         posterior_distribution = self.network.multivariate_normal
 
-        recon_loss = self.vae_rec_loss(y_predict, y_target, reduction='sum')
+        recon_loss = self.vae_rec_loss(y_predict, y_target, reduction="sum")
         kl_div = kl_divergence(posterior_distribution, prior_normal_distribution)
 
         return recon_loss + kl_div

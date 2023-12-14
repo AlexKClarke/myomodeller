@@ -14,7 +14,6 @@ if __name__ == "__main__":
     # at run time. The training module will look in the loader_modules
     # and update_modules __init__.py for the named modules and then pass
     training_module_config = {
-        #"trainer_kwargs": {"accelerator": "cpu"},
         "log_name": "mnist_vae",
         "update_module_config": {
             "update_module_name": "VariationalAutoencoder",
@@ -31,13 +30,17 @@ if __name__ == "__main__":
                     "output_shape": [64],
                     "latent_dim": 3,
                     "out_chans_per_layer": [16, 32],
-                    "num_sampling_draws": 1
+                    "num_sampling_draws": 1,
                 },
             },
         },
         "loader_module_config": {
             "loader_module_name": "MNIST",
-            "loader_module_kwargs": {"batch_size": 64, "auto": True, "flatten_input": True},
+            "loader_module_kwargs": {
+                "batch_size": 64,
+                "auto": True,
+                "flatten_input": True,
+            },
         },
     }
 

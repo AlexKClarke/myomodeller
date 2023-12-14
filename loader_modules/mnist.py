@@ -18,10 +18,8 @@ class MNIST(LoaderModule):
         batch_size: int = 64,
         auto: bool = False,
         one_hot_labels: bool = False,
-        flatten_input: bool = False
+        flatten_input: bool = False,
     ):
-        self.flatten_input = flatten_input
-
         (
             train_images,
             train_labels,
@@ -29,7 +27,7 @@ class MNIST(LoaderModule):
             val_labels,
             test_images,
             test_labels,
-        ) = self._get_data(one_hot_labels)
+        ) = self._get_data(one_hot_labels, flatten_input)
 
         super().__init__(
             train_data=[train_images, train_images if auto else train_labels],
@@ -40,19 +38,13 @@ class MNIST(LoaderModule):
             output_shape=[10],
         )
 
-
-
-    def _get_data(self, one_hot_labels):
+    def _get_data(self, one_hot_labels: bool = False, flatten_input: bool = False):
         """Loads MNIST digits from scikit.datasets"""
 
         # sklearn flattens the images for some reason so also need to reshape
         images, labels = load_digits(return_X_y=True)
         images, labels = images.astype("float32"), labels.astype("int64")
         images = images.reshape((images.shape[0], 1, 8, 8))
-
-        # if flattening is necessary
-        if self.flatten_input == True:
-            images = images.reshape((images.shape[0], 1, 64))
 
         # Split out train, val and test sets
         train_data, test_data = split_array_by_indices(
@@ -67,9 +59,13 @@ class MNIST(LoaderModule):
             [train_images, train_labels],
             [val_images, val_labels],
             [test_images, test_labels],
-        ) = [
-            array_to_tensor(data) for data in [train_data, val_data, test_data]
-        ]
+        ) = [array_to_tensor(data) for data in [train_data, val_data, test_data]]
+
+        # If flattening is necessary
+        if flatten_input:
+            [train_images, val_images, test_images] = [
+                images.flatten(1) for images in [train_images, val_images, test_images]
+            ]
 
         # One hot labels if needed
         if one_hot_labels:
