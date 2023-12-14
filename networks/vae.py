@@ -62,14 +62,6 @@ class MLPVariationalAutoencoder(nn.Module):
         """
         super().__init__()
 
-        self.prior = td.MultivariateNormal(
-            torch.zeros(latent_dim), torch.eye(latent_dim)
-        )
-        self.posterior = td.Normal(torch.zeros(latent_dim), torch.ones(latent_dim))
-        self.recon = td.Normal(
-            torch.zeros(output_shape[-1]), torch.ones(output_shape[-1])
-        )
-
         if fix_recon_cov:
             self.recon_cov = torch.ones(output_shape[-1])
         else:
