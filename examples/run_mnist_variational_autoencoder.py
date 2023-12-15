@@ -42,6 +42,12 @@ if __name__ == "__main__":
                 "flatten_input": True,
             },
         },
+        "trainer_kwargs": {
+            "accelerator": "cpu",
+            "devices": 1,
+            "max_epochs": 100,
+            "log_every_n_steps": 1,
+        },
     }
 
     # Once the config is defined it can be passed to an instance of the

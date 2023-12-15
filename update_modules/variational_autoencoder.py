@@ -35,7 +35,6 @@ class VariationalAutoencoder(UpdateModule):
         self.lamb = l1_loss_coeff
 
     def _calculate_loss(self, x, y_target):
-        # y_target = x
 
         # 1. Encode the input
         z_mean, z_log_exp_cov = self.network.encode(x)
