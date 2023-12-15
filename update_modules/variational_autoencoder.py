@@ -36,16 +36,25 @@ class VariationalAutoencoder(UpdateModule):
 
     def _calculate_loss(self, x, y_target):
         # y_target = x
-        self.network.sample_posterior(x)
-        prior_normal_distribution = Normal(
-            torch.zeros(mu.shape()), torch.ones(std.shape)
-        )
-        posterior_distribution = self.network.multivariate_normal
 
-        recon_loss = self.vae_rec_loss(y_predict, y_target, reduction="sum")
+        # 1. Encode the input
+        z_mean, z_log_exp_cov = self.network.encode(x)
+        # 2. Generate posterior distribution
+        posterior_distribution = Normal(z_mean, z_log_exp_cov)
+
+        # 3. Create prior normal distribution (0 mean unit var)
+        prior_normal_distribution = Normal(
+            torch.zeros_like(z_mean), torch.ones_like(z_log_exp_cov)
+        )
+
+        # 4. Forward pass to obtain reconstructed output
+        y_predict = self.network.forward(x)
+
+        # 5. Compute loss terms
+        recon_loss = self.loss_fn(y_predict, y_target) #todo Change with BCELoss
         kl_div = kl_divergence(posterior_distribution, prior_normal_distribution)
 
-        return recon_loss + kl_div
+        return recon_loss + kl_div.mean() #todo is taking the mean appropriate? i get error that loss is not scalar otherwise (grad computation impossible)
 
     def training_step(self, batch, batch_idx):
         x, y_target = batch

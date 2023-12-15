@@ -1,0 +1,4 @@
+numpy
+pytorch
+scikit-learn
+pytorch-lightning

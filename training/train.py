@@ -195,7 +195,7 @@ class TrainingModule:
             key: (val if key not in trainer_kwargs else trainer_kwargs[key])
             for key, val in zip(
                 ["accelerator", "devices", "max_epochs", "log_every_n_steps"],
-                ["gpu", 1, 5000, 1],
+                ["cpu", 1, 5000, 1],
             )
         }
 

@@ -83,7 +83,7 @@ class MLPVariationalAutoencoder(nn.Module):
         self.decoder = MLPBlock(
             input_shape=[
                 num_sampling_draws * latent_dim
-            ],  # 1D, afte flattening the 2D output of the sampling function
+            ],  # 1D, after flattening the 2D output of the sampling function
             output_shape=output_shape,
             out_chans_per_layer=out_chans_per_layer,
             use_batch_norm=use_batch_norm,
@@ -109,27 +109,10 @@ class MLPVariationalAutoencoder(nn.Module):
         z = td.Normal(*self.encode(x)).sample()
         return self.decode(z)[0]
 
-    def sample_posterior(
-        self, z_mean: torch.Tensor, z_cov: torch.Tensor, num_draws: int = 1
-    ) -> torch.Tensor:
+    def sample_posterior(self, z_mean: torch.Tensor, z_cov: torch.Tensor, num_draws: int = 1) -> torch.Tensor:
         z = td.Normal(z_mean, z_cov).rsample((num_draws,))
         return z
 
-    def sampling(self, latent_dim, num_sampling_draws, z: torch.Tensor) -> torch.Tensor:
-        # mean and std of new sample
-        self.distribution_mean = z[:latent_dim]
-        self.covariance_matrix = torch.diag(z[latent_dim:])  # diagonal cov matrix
-        # update distribution
-        self.multivariate_normal = MultivariateNormal(
-            self.distribution_mean, self.covariance_matrix
-        )
-
-        # Returns a 2D tensor, of size (num_draws, latent_dim)
-        return (
-            self.multivariate_normal.rsample((num_sampling_draws,)),
-            self.distribution_mean,
-            self.covariance_matrix,
-        )
 
 
 class Conv1dVariationalAutoencoder(nn.Module):
