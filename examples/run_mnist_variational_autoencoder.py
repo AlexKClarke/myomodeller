@@ -20,33 +20,26 @@ if __name__ == "__main__":
             "update_module_kwargs": {
                 "optimizer": "AdamW",
                 "optimizer_kwargs": {"lr": 0.001},
-                "l1_loss_coeff": 0.1,
+                "beta_step": 1e-2,
+                "max_beta": 1.0,
             },
-            "maximize_val_target": True,
+            "maximize_val_target": False,
             "network_config": {
-                "network_name": "vae.MLPVariationalAutoencoder",
+                "network_name": "vae.Conv2dVariationalAutoencoder",
                 "network_kwargs": {
-                    "input_shape": [64],
-                    "output_shape": [64],
                     "latent_dim": 3,
                     "out_chans_per_layer": [16, 32],
-                    "num_sampling_draws": 1,
+                    "fix_recon_var": False,
                 },
             },
         },
         "loader_module_config": {
             "loader_module_name": "MNIST",
             "loader_module_kwargs": {
-                "batch_size": 64,
+                "batch_size": 32,
                 "auto": True,
-                "flatten_input": True,
+                "flatten_input": False,
             },
-        },
-        "trainer_kwargs": {
-            "accelerator": "cpu",
-            "devices": 1,
-            "max_epochs": 100,
-            "log_every_n_steps": 1,
         },
     }
 
