@@ -372,7 +372,6 @@ class Conv2dVariationalAutoencoder(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Reconstructs input for testing using mean of posterior and recon"""
-
         z = self.encode(x)[0]
         return self.decode(z)[0]
 

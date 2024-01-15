@@ -54,6 +54,6 @@ if __name__ == "__main__":
     training_module = TrainingModule(training_module_config)
 
     # Run HPO with the training module. Alongside the normal version files
-    # it will create a best config on completion. This will have an
+    # it will create the best config on completion. This will have an
     # additional "version" key that can be used to identify the best folder
     training_module.train()
