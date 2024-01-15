@@ -1,0 +1,7 @@
+numpy
+ray
+pyarrow
+torch
+pytorch
+scikit-learn
+pytorch-lightning

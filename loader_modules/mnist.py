@@ -18,6 +18,7 @@ class MNIST(LoaderModule):
         batch_size: int = 64,
         auto: bool = False,
         one_hot_labels: bool = False,
+        flatten_input: bool = False,
     ):
         (
             train_images,
@@ -26,18 +27,18 @@ class MNIST(LoaderModule):
             val_labels,
             test_images,
             test_labels,
-        ) = self._get_data(one_hot_labels)
+        ) = self._get_data(one_hot_labels, flatten_input)
 
         super().__init__(
             train_data=[train_images, train_images if auto else train_labels],
             val_data=[val_images, val_images if auto else val_labels],
             test_data=[test_images, test_images if auto else test_labels],
             batch_size=batch_size,
-            input_shape=[1, 8, 8],
-            output_shape=[10],
+            input_shape=train_images.shape[1:],
+            output_shape=train_images.shape[1:] if auto else train_labels.shape[1:],
         )
 
-    def _get_data(self, one_hot_labels):
+    def _get_data(self, one_hot_labels: bool = False, flatten_input: bool = False):
         """Loads MNIST digits from scikit.datasets"""
 
         # sklearn flattens the images for some reason so also need to reshape
@@ -58,9 +59,13 @@ class MNIST(LoaderModule):
             [train_images, train_labels],
             [val_images, val_labels],
             [test_images, test_labels],
-        ) = [
-            array_to_tensor(data) for data in [train_data, val_data, test_data]
-        ]
+        ) = [array_to_tensor(data) for data in [train_data, val_data, test_data]]
+
+        # If flattening is necessary
+        if flatten_input:
+            [train_images, val_images, test_images] = [
+                images.flatten(1) for images in [train_images, val_images, test_images]
+            ]
 
         # One hot labels if needed
         if one_hot_labels:
