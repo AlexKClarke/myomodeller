@@ -239,6 +239,13 @@ class TrainingModule:
                 ckpt_path=config["ckpt_path"],
             )
 
+        # these lines are just for testing the visualization
+        '''test = loader_module._get_data()
+        data = test[4]
+        from visualization_modules import latents_visualization
+        vis_test = latents_visualization.VisualizeLatentSpace(data, trainer_module)
+        vis_test.plot_latent_space()'''
+
         # Run testing
         if loader_module.test_data_present:
             ckpt_path = config["ckpt_path"] if test_mode else None

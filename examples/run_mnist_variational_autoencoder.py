@@ -1,4 +1,4 @@
-"""Example of training a 2D convolutional neural network to autoencode 
+"""Example of training a 2D convolutional neural network to autoencode
 8x8 MNIST images"""
 
 import os, sys
