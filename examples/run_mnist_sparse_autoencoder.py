@@ -37,15 +37,6 @@ if __name__ == "__main__":
             "loader_module_name": "MNIST",
             "loader_module_kwargs": {"batch_size": 64, "auto": True},
         },
-
-        # Following block just to enable cpu training for testing
-        # Not necessary for the merge in main branch
-        "trainer_kwargs": {
-            "accelerator": "cpu",
-            "devices": 1,
-            "max_epochs": 50,
-            "log_every_n_steps": 1,
-        },
     }
 
     # Once the config is defined it can be passed to an instance of the
