@@ -27,7 +27,7 @@ if __name__ == "__main__":
             "network_config": {
                 "network_name": "vae.Conv2dVariationalAutoencoder",
                 "network_kwargs": {
-                    "latent_dim": 3,
+                    "latent_dim": 2,
                     "out_chans_per_layer": [16, 32],
                     "fix_recon_var": False,
                 },
@@ -41,6 +41,12 @@ if __name__ == "__main__":
                 "flatten_input": False,
             },
         },
+        "trainer_kwargs": {
+            "accelerator": "cpu",
+            "devices": 1,
+            "max_epochs": 10,
+            "log_every_n_steps": 1,
+        },
     }
 
     # Once the config is defined it can be passed to an instance of the
@@ -53,6 +59,6 @@ if __name__ == "__main__":
     '''"trainer_kwargs": {
         "accelerator": "cpu",
         "devices": 1,
-        "max_epochs": 200,
+        "max_epochs": 10,
         "log_every_n_steps": 1,
     },'''
