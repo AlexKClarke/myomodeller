@@ -242,8 +242,9 @@ class TrainingModule:
         # these lines are just for testing the visualization
         '''test = loader_module._get_data()
         data = test[4]
+        labels = test[5]
         from visualization_modules import latents_visualization
-        vis_test = latents_visualization.VisualizeLatentSpace(data, trainer_module)
+        vis_test = latents_visualization.VisualizeLatentSpace(data, labels, trainer_module)
         vis_test.plot_latent_space()'''
 
         # Run testing
@@ -254,6 +255,15 @@ class TrainingModule:
                 dataloaders=loader_module,
                 ckpt_path=ckpt_path,
             )
+
+        # VISUALIZATION
+        if config["latents_visualization"] == True:
+            test = loader_module._get_data()
+            data = test[4]
+            labels = test[5]
+            from visualization_modules import latents_visualization
+            vis_test = latents_visualization.VisualizeLatentSpace(data, labels, trainer_module)
+            vis_test.plot_latent_space()
 
         # Add latest ckpt path to config
         if test_mode is False:

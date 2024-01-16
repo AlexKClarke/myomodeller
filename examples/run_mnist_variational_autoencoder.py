@@ -27,8 +27,8 @@ if __name__ == "__main__":
             "network_config": {
                 "network_name": "vae.Conv2dVariationalAutoencoder",
                 "network_kwargs": {
-                    "latent_dim": 2,
-                    "out_chans_per_layer": [16, 32],
+                    "latent_dim": 4,
+                    "out_chans_per_layer": [8],
                     "fix_recon_var": False,
                 },
             },
@@ -45,8 +45,10 @@ if __name__ == "__main__":
             "accelerator": "cpu",
             "devices": 1,
             "max_epochs": 10,
-            "log_every_n_steps": 1,
+            "log_every_n_steps": 10,
         },
+
+        "latents_visualization": True,
     }
 
     # Once the config is defined it can be passed to an instance of the
@@ -55,6 +57,8 @@ if __name__ == "__main__":
 
     # Train the model and pass the results to tensorboard
     training_module.train()
+
+
 
     '''"trainer_kwargs": {
         "accelerator": "cpu",
