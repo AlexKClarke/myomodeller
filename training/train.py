@@ -3,6 +3,7 @@ from typing import Dict, Union, Optional
 import os
 import json
 
+import numpy as np
 import torch
 from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import TensorBoardLogger
@@ -258,9 +259,12 @@ class TrainingModule:
 
         # VISUALIZATION
         if config["latents_visualization"] == True:
-            test = loader_module._get_data()
-            data = test[4]
-            labels = test[5]
+            dataset = loader_module._get_data()
+            data = dataset[4]
+            labels = dataset[5]
+            if config["loader_module_config"]["loader_module_kwargs"]["flatten_input"] == True:
+                data = np.reshape(data, (data.shape[0], -1))
+
             from visualization_modules import latents_visualization
             vis_test = latents_visualization.VisualizeLatentSpace(data, labels, trainer_module)
             vis_test.plot_latent_space()

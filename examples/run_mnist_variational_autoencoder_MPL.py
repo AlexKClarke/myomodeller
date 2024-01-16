@@ -14,7 +14,7 @@ if __name__ == "__main__":
     # at run time. The training module will look in the loader_modules
     # and update_modules __init__.py for the named modules and then pass
     training_module_config = {
-        "log_name": "mnist_vae",
+        "log_name": "mnist_vae_MLP",
         "update_module_config": {
             "update_module_name": "VariationalAutoencoder",
             "update_module_kwargs": {
@@ -25,10 +25,10 @@ if __name__ == "__main__":
             },
             "maximize_val_target": False,
             "network_config": {
-                "network_name": "vae.Conv2dVariationalAutoencoder",
+                "network_name": "vae.MLPVariationalAutoencoder",
                 "network_kwargs": {
-                    "latent_dim": 4,
-                    "out_chans_per_layer": [8],
+                    "latent_dim": 3,
+                    "out_chans_per_layer": [256, 128],
                     "fix_recon_var": False,
                 },
             },
@@ -38,13 +38,13 @@ if __name__ == "__main__":
             "loader_module_kwargs": {
                 "batch_size": 32,
                 "auto": True,
-                "flatten_input": False,
+                "flatten_input": True,
             },
         },
         "trainer_kwargs": {
             "accelerator": "cpu",
             "devices": 1,
-            "max_epochs": 10,
+            "max_epochs": 50,
             "log_every_n_steps": 10,
         },
 
