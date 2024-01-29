@@ -4,6 +4,7 @@ subclasses in loader and update subclasses"""
 from typing import Dict, Optional, Sequence
 
 import torch
+import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset, WeightedRandomSampler
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from pytorch_lightning import LightningDataModule, LightningModule
@@ -246,11 +247,15 @@ class UpdateModule(LightningModule):
             early_stopping_kwargs["patience"] > lr_scheduler_kwargs["patience"]
         ), "Patience of early_stopping_kwargs must be >= lr_scheduler_kwargs."
 
+        # Switch off automatic optimisation if multiple optimizers
+        if optimizer == "multimodel":
+            self.automatic_optimization = False
+
         # Move checked arguments to class scope
         self.network = network
         self.hpo_mode = hpo_mode
         self.checkpoint_kwargs = checkpoint_kwargs
-        self.optimizer = getattr(torch.optim, optimizer)
+        self.optimizer = optimizer
         self.optimizer_kwargs = optimizer_kwargs
         self.lr_scheduler_kwargs = lr_scheduler_kwargs
         self.early_stopping_kwargs = early_stopping_kwargs
@@ -261,7 +266,10 @@ class UpdateModule(LightningModule):
         self.test_step_outputs = []
 
     def forward(self, x):
-        return self.network(x)
+        if isinstance(self.network, nn.ModuleList):
+            return self.network[0](x)
+        else:
+            return self.network(x)
 
     def configure_optimizers(self):
         """
@@ -269,17 +277,57 @@ class UpdateModule(LightningModule):
         based on the val_target monitor
         """
 
-        optimizer = self.optimizer(self.parameters(), **self.optimizer_kwargs)
-        return {
-            "optimizer": optimizer,
-            "lr_scheduler": {
-                "scheduler": ReduceLROnPlateau(
-                    optimizer,
-                    **self.lr_scheduler_kwargs,
-                ),
-                "monitor": "val_target",
-            },
-        }
+        networks = (
+            self.network if isinstance(self.network, nn.ModuleList) else [self.network]
+        )
+
+        if self.optimizer == "multimodel":
+            if "optimizer" in self.optimizer_kwargs:
+                optimizers = len(networks) * [getattr(torch.optim, self.optimizer)]
+                optimizer_kwargs = len(networks) * [self.optimizer_kwargs]
+            else:
+                assert len(self.optimizer_kwargs) == len(
+                    self.network
+                ), "Different number of optimizer kwargs to networks."
+
+                optimizers = [
+                    getattr(torch.optim, self.optimizer_kwargs[idx]["optimizer"])
+                    for idx in range(len(networks))
+                ]
+                optimizer_kwargs = [
+                    self.optimizer_kwargs[idx]["optimizer_kwargs"]
+                    for idx in range(len(networks))
+                ]
+        else:
+            optimizers = [getattr(torch.optim, self.optimizer)]
+            optimizer_kwargs = [self.optimizer_kwargs]
+
+        opt_configuration = []
+        for idx, [net, opt, opt_kwargs] in enumerate(
+            zip(networks, optimizers, optimizer_kwargs)
+        ):
+            optimizer = opt(net.parameters(), **opt_kwargs)
+            if idx == 0:
+                opt_configuration.append(
+                    {
+                        "optimizer": optimizer,
+                        "lr_scheduler": {
+                            "scheduler": ReduceLROnPlateau(
+                                optimizer,
+                                **self.lr_scheduler_kwargs,
+                            ),
+                            "monitor": "val_target",
+                        },
+                    }
+                )
+            else:
+                opt_configuration.append(
+                    {
+                        "optimizer": optimizer,
+                    }
+                )
+
+        return opt_configuration
 
     def configure_callbacks(self):
         """
@@ -287,9 +335,7 @@ class UpdateModule(LightningModule):
         """
         callbacks = [EarlyStopping(**self.early_stopping_kwargs)]
         if self.hpo_mode:
-            callbacks.append(
-                TuneReportCallback("val_target", on="validation_end")
-            )
+            callbacks.append(TuneReportCallback("val_target", on="validation_end"))
         callbacks.append(ModelCheckpoint(**self.checkpoint_kwargs))
         callbacks.append(TrainingEpochEnd())
         callbacks.append(ValidationEpochEnd())

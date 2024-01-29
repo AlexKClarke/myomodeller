@@ -36,6 +36,8 @@
 
 from typing import Dict
 
+import torch.nn as nn
+
 
 def process_network_config(config: Dict):
     """Converts a network config dict to the class
@@ -53,12 +55,35 @@ def process_network_config(config: Dict):
 
     """
 
-    import networks as net
+    if config["network_name"] == "multimodel":
+        subnets = []
+        for k in [k for k in config["network_kwargs"].keys() if isinstance(k, int)]:
+            network_name = config["network_kwargs"][k]["network_name"]
+            network_kwargs = config["network_kwargs"][k]["network_kwargs"]
 
-    for s in config["network_name"].split("."):
-        net = getattr(net, s)
+            if "input_shape" not in network_kwargs:
+                network_kwargs["input_shape"] = config["network_kwargs"]["input_shape"]
 
-    return net(**config["network_kwargs"])
+            if "output_shape" not in network_kwargs:
+                network_kwargs["output_shape"] = config["network_kwargs"][
+                    "output_shape"
+                ]
+
+            import networks as net
+
+            for s in network_name.split("."):
+                net = getattr(net, s)
+
+            subnets.append(net(**network_kwargs))
+
+        return nn.ModuleList(subnets)
+    else:
+        import networks as net
+
+        for s in config["network_name"].split("."):
+            net = getattr(net, s)
+
+        return net(**config["network_kwargs"])
 
 
 def process_update_module_config(config: Dict):
