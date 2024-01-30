@@ -51,7 +51,7 @@ class VariationalAutoencoder(UpdateModule):
         kld_loss = td.kl_divergence(posterior_dist, prior_dist).mean()
 
         # Get the log probability of x given the reconstruction distribution
-        recon_loss = recon_dist.log_prob(x).sum(1).mean()
+        recon_loss = recon_dist.log_prob(x).sum(1).mean() # mean represents the expectation over the samples
 
         return -recon_loss, kld_loss
 

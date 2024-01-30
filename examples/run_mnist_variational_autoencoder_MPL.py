@@ -39,12 +39,13 @@ if __name__ == "__main__":
                 "batch_size": 32,
                 "auto": True,
                 "flatten_input": True,
+                "full_dataset": False,
             },
         },
         "trainer_kwargs": {
             "accelerator": "cpu",
             "devices": 1,
-            "max_epochs": 50,
+            "max_epochs": 10,
             "log_every_n_steps": 10,
         },
 

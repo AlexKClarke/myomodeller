@@ -28,6 +28,8 @@ if __name__ == "__main__":
                 "network_name": "vae.Conv2dVariationalAutoencoder",
                 "network_kwargs": {
                     "latent_dim": 2,
+                    "kernel_size_per_layer": 5,
+                    "stride_per_layer": 1,
                     "out_chans_per_layer": [8],
                     "fix_recon_var": False,
                 },
@@ -39,6 +41,7 @@ if __name__ == "__main__":
                 "batch_size": 32,
                 "auto": True,
                 "flatten_input": False,
+                "full_dataset": True,
             },
         },
         "trainer_kwargs": {

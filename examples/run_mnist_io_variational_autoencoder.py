@@ -38,6 +38,7 @@ if __name__ == "__main__":
             "network_config": {
                 "network_name": "multimodel",
                 "network_kwargs": {
+
                     0: {
                         "network_name": "vae.MLPVariationalAutoencoder",
                         "network_kwargs": {
@@ -46,6 +47,7 @@ if __name__ == "__main__":
                             "fix_recon_var": False,
                         },
                     },
+
                     1: {
                         "network_name": "blocks.MLPBlock",
                         "network_kwargs": {
@@ -65,6 +67,12 @@ if __name__ == "__main__":
                 "auto": True,
                 "flatten_input": True,
             },
+        },
+        "trainer_kwargs": {
+            "accelerator": "cpu",
+            "devices": 1,
+            "max_epochs": 200,
+            "log_every_n_steps": 1,
         },
     }
 
