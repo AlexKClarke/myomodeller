@@ -250,17 +250,17 @@ class TrainingModule:
                 ckpt_path=ckpt_path,
             )
 
-        # VISUALIZATION
-        if config["latents_visualization"] == True:
-            dataset = loader_module._get_data()
-            data = dataset[4]
-            labels = dataset[5]
-            if config["loader_module_config"]["loader_module_kwargs"]["flatten_input"] == True:
-                data = np.reshape(data, (data.shape[0], -1))
+            # VISUALIZATION
+            if config["latents_visualization"] == True:
+                dataset = loader_module._get_data(flatten_input=config["loader_module_config"]["loader_module_kwargs"]["flatten_input"], full_dataset = config["loader_module_config"]["loader_module_kwargs"]["full_dataset"])
+                loader_module.test_dataset.tensors[0]
+                data = dataset[4]
+                labels = dataset[5]
 
-            from visualization_modules import latents_visualization
-            vis_test = latents_visualization.VisualizeLatentSpace(data, labels, trainer_module, config)
-            vis_test.plot_latent_space()
+
+                from visualization_modules import latents_visualization
+                vis_test = latents_visualization.VisualizeLatentSpace(data, labels, trainer_module, loader_module, config)
+                vis_test.plot_latent_space()
 
         # Add latest ckpt path to config
         if test_mode is False:

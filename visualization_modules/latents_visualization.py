@@ -7,10 +7,11 @@ class VisualizeLatentSpace:
     Inputs:
     - batch of samples
     - trainer_module
+    - loader_module
     - config (to get latent space size)
 
     Output:
-    - latent space plot
+    - latent space plots
 
     """
 
@@ -19,11 +20,13 @@ class VisualizeLatentSpace:
         data_batch,
         labels_batch,
         trainer_module,
+        loader_module,
         config,
     ):
         self.data_batch = data_batch
         self.labels_batch = labels_batch
         self.trainer_module = trainer_module
+        self.loader_module = loader_module
         self.config = config
 
     def plot_latent_space(self):
