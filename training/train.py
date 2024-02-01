@@ -240,13 +240,6 @@ class TrainingModule:
                 ckpt_path=config["ckpt_path"],
             )
 
-        # these lines are just for testing the visualization
-        '''test = loader_module._get_data()
-        data = test[4]
-        labels = test[5]
-        from visualization_modules import latents_visualization
-        vis_test = latents_visualization.VisualizeLatentSpace(data, labels, trainer_module)
-        vis_test.plot_latent_space()'''
 
         # Run testing
         if loader_module.test_data_present:
@@ -266,7 +259,7 @@ class TrainingModule:
                 data = np.reshape(data, (data.shape[0], -1))
 
             from visualization_modules import latents_visualization
-            vis_test = latents_visualization.VisualizeLatentSpace(data, labels, trainer_module)
+            vis_test = latents_visualization.VisualizeLatentSpace(data, labels, trainer_module, config)
             vis_test.plot_latent_space()
 
         # Add latest ckpt path to config

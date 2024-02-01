@@ -43,10 +43,10 @@ if __name__ == "__main__":
             },
         },
         "trainer_kwargs": {
-            "accelerator": "cpu",
+            "accelerator": "gpu",
             "devices": 1,
-            "max_epochs": 10,
-            "log_every_n_steps": 10,
+            "max_epochs": 100,
+            "log_every_n_steps": 1,
         },
 
         "latents_visualization": True,

@@ -1,7 +1,12 @@
 numpy
 ray
+ray[tune]
 pyarrow
 torch
-pytorch
+torchvision
 scikit-learn
 pytorch-lightning
+pandas
+tensorboard
+tensorboardX
+matplotlib

@@ -20,6 +20,7 @@ class IOVariationalAutoencoder(UpdateModule):
         beta_step: float = 1e-2,
         max_beta: float = 1.0,
         n_steps_per_switch: int = 5,
+        network_training_steps: list = [10, 10],
         n_samples_in_aux: int = 16,
     ):
         super().__init__(
@@ -36,7 +37,11 @@ class IOVariationalAutoencoder(UpdateModule):
         self.beta_step = beta_step
         self.max_beta = max_beta
         self.n_steps_per_switch = n_steps_per_switch
+        self.network_training_steps = network_training_steps
         self.n_samples_in_aux = n_samples_in_aux
+
+        self.vae_step = 0
+        self.discriminator_step = 0
 
     def _calculate_elbo_terms(self, x: torch.Tensor):
         # Get the posterior and reconstuction parameters
@@ -125,17 +130,17 @@ class IOVariationalAutoencoder(UpdateModule):
 
         return r2.mean()
 
-    def training_step(self, batch, batch_idx):
+    '''def training_step(self, batch, batch_idx):
 
         # n_steps_per_switch determines how many times the discriminator network is updates wrt. the vae network
         if self.trainer.global_step % self.n_steps_per_switch != 0:
-            #--> here, the main vae is updated
+            #--> here, the main VAE IS UPDATED
 
             opt = self.optimizers()
             opt[0].zero_grad()
 
             #recon_loss, kld_loss = self._calculate_elbo_terms(batch[0])
-            recon_loss, kld_loss = self._calculate_elbo_terms(batch[0])
+            recon_loss, kld_loss = self._calculate_elbo_terms_io(batch[0])
             elbo = recon_loss + self.beta * kld_loss
 
             self.manual_backward(elbo)
@@ -149,8 +154,53 @@ class IOVariationalAutoencoder(UpdateModule):
                     "beta": torch.tensor(self.beta),
                 }
             )
+            
         else:
-            #--> here, the discriminator network is updated
+            #--> here, the DISCRIMINATOR IS UPDATED 
+
+            opt = self.optimizers()
+            opt[1].zero_grad()
+
+            aux_loss = self._calculate_auxiliary_loss(batch[0])
+
+            self.manual_backward(aux_loss)
+            opt[1].step()
+
+            self.training_step_outputs.append(
+                {
+                    "aux_loss": aux_loss,
+                }
+            )'''
+
+    def training_step(self, batch, batch_idx):
+
+        # n_steps_per_switch determines how many times the discriminator network is updates wrt. the vae network
+        if self.vae_step < self.network_training_steps[0]:
+            # --> here, the main VAE IS UPDATED
+
+            opt = self.optimizers()
+            opt[0].zero_grad()
+
+            # recon_loss, kld_loss = self._calculate_elbo_terms(batch[0])
+            recon_loss, kld_loss = self._calculate_elbo_terms_io(batch[0])
+            elbo = recon_loss + self.beta * kld_loss
+
+            self.manual_backward(elbo)
+            opt[0].step()
+
+            self.training_step_outputs.append(
+                {
+                    "training_elbo": elbo,
+                    "training_recon": recon_loss,
+                    "training_kld": kld_loss,
+                    "beta": torch.tensor(self.beta),
+                }
+            )
+
+            self.vae_step += 1
+
+        elif self.discriminator_step < self.network_training_steps[1]:
+            # --> here, the DISCRIMINATOR IS UPDATED
 
             opt = self.optimizers()
             opt[1].zero_grad()
@@ -165,6 +215,12 @@ class IOVariationalAutoencoder(UpdateModule):
                     "aux_loss": aux_loss,
                 }
             )
+
+            self.discriminator_step += 1
+
+        else:
+            self.vae_step = 0
+            self.discriminator_step = 0
 
     def on_train_epoch_end(self):
         # gradually increase beta until max_beta

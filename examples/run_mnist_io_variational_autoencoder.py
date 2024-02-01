@@ -32,6 +32,7 @@ if __name__ == "__main__":
                 "beta_step": 1e-2,
                 "max_beta": 1.0,
                 "n_steps_per_switch": 5,
+                "network_training_steps": [10, 10],
                 "n_samples_in_aux": 16,
             },
             "maximize_val_target": False,
@@ -42,7 +43,7 @@ if __name__ == "__main__":
                     0: {
                         "network_name": "vae.MLPVariationalAutoencoder",
                         "network_kwargs": {
-                            "latent_dim": 3,
+                            "latent_dim": 2,
                             "out_chans_per_layer": [32, 32],
                             "fix_recon_var": False,
                         },
@@ -51,7 +52,7 @@ if __name__ == "__main__":
                     1: {
                         "network_name": "blocks.MLPBlock",
                         "network_kwargs": {
-                            "input_shape": [3],
+                            "input_shape": [2],
                             "output_shape": [1],
                             "out_chans_per_layer": [32, 32],
                             "output_activation": "Sigmoid",
@@ -68,12 +69,18 @@ if __name__ == "__main__":
                 "flatten_input": True,
             },
         },
+
+        "latents_visualization": True,
+
         "trainer_kwargs": {
-            "accelerator": "cpu",
+            "accelerator": "gpu",
             "devices": 1,
-            "max_epochs": 200,
+            "max_epochs": 100,
             "log_every_n_steps": 1,
         },
+
+
+
     }
 
     # Once the config is defined it can be passed to an instance of the
@@ -82,6 +89,8 @@ if __name__ == "__main__":
 
     # Train the model and pass the results to tensorboard
     training_module.train()
+
+
 
     """"trainer_kwargs": {
         "accelerator": "cpu",

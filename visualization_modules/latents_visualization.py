@@ -19,10 +19,12 @@ class VisualizeLatentSpace:
         data_batch,
         labels_batch,
         trainer_module,
+        config,
     ):
         self.data_batch = data_batch
         self.labels_batch = labels_batch
         self.trainer_module = trainer_module
+        self.config = config
 
     def plot_latent_space(self):
         (mean_list, var_list) = self.batch_inference(self.data_batch, self.trainer_module)
@@ -54,6 +56,11 @@ class VisualizeLatentSpace:
 
     def batch_inference(self, data_batch, trainer_module):
         model = trainer_module.model
-        inference_results = model.network.encode(data_batch)
+        if self.config["update_module_config"]["update_module_name"] == 'IOVariationalAutoencoder':
+            vae_model = model.network[0]
+        else:
+            vae_model = model.network
+
+        inference_results = vae_model.encode(data_batch) # returns mean and variance of the latents
 
         return inference_results
