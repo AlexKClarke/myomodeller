@@ -30,13 +30,28 @@ class VariationalAutoencoder(UpdateModule):
             early_stopping_kwargs,
         )
 
-        self.beta = 0.0
-        self.beta_step = beta_step
+        self.beta = 0.0 # beta initialised
+        self.beta_step = beta_step # added at the end of each epoch
         self.max_beta = max_beta
 
     def _calculate_elbo_terms(self, x: torch.Tensor):
+
+
+
         # Get the posterior and reconstuction parameters
         z_mean, z_var = self.network.encode(x)
+
+        #todo: DOES THIS MAKE SENSE?
+        # it adds a small epsilon to any element that is not greater than 0
+        # issue: the error is not always solved
+        min_value = z_var.min().item()
+        epsilon = min_value
+        if epsilon > 1e-18:
+            epsilon = 1e-18
+        # Add 1/10 of the smallest element to any element not greater than 0
+        z_var = torch.where(z_var > 0, z_var, z_var + epsilon)
+        ######################
+
         z = self.network.sample_posterior(z_mean, z_var)
         recon_mean, recon_var = self.network.decode(z)
 
@@ -83,6 +98,8 @@ class VariationalAutoencoder(UpdateModule):
             self.beta += self.beta_step
         else:
             self.beta = self.max_beta
+
+
 
     def validation_step(self, batch, batch_idx):
         r2 = self._calculate_recon_r2(batch[0])

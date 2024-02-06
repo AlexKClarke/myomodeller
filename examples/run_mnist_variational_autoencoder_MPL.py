@@ -39,7 +39,6 @@ if __name__ == "__main__":
                 "batch_size": 32,
                 "auto": True,
                 "flatten_input": True,
-                "full_dataset": False,
             },
         },
         "trainer_kwargs": {

@@ -239,6 +239,7 @@ class Conv2dBlock(nn.Module):
             )
         )
 
+        # THIS LOOPS COMPUTES THE FINAL OUTPUT SIZE, AFTER THE SEQUENCE OF CONVOLUTIONS IS APPLIED
         h_dim, w_dim = input_shape[1], input_shape[2]
         for _, kernel_size, stride in params_per_layer:
             h_dim = ((h_dim - kernel_size[0]) // stride[0]) + 1
@@ -262,12 +263,14 @@ class Conv2dBlock(nn.Module):
             in_channel = out_channel
 
         flat_output_dim = int(torch.tensor(output_shape).prod().numpy())
+        # computed the total number of elements in the tensor (basically the size of the flattened version)
+        # in this case the total size of the desired output shape of the convolutional block - in a flattened format
 
         self.block.append(nn.Flatten())
         self.block.append(
             nn.Linear(flat_conv_dim, flat_output_dim, bias=use_output_bias)
         )
-        self.block.append(Reshape(output_shape))
+        self.block.append(Reshape(output_shape)) # reshape into the desired non-flattened output shape
         self.block.append(
             getattr(torch.nn, output_activation)()
             if output_activation

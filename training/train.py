@@ -252,7 +252,7 @@ class TrainingModule:
 
             # VISUALIZATION
             if config["latents_visualization"] == True:
-                dataset = loader_module._get_data(flatten_input=config["loader_module_config"]["loader_module_kwargs"]["flatten_input"], full_dataset = config["loader_module_config"]["loader_module_kwargs"]["full_dataset"])
+                dataset = loader_module._get_data(flatten_input=config["loader_module_config"]["loader_module_kwargs"]["flatten_input"])
                 loader_module.test_dataset.tensors[0]
                 data = dataset[4]
                 labels = dataset[5]

@@ -379,5 +379,7 @@ class Conv2dVariationalAutoencoder(nn.Module):
     def sample_posterior(
         self, z_mean: torch.Tensor, z_var: torch.Tensor, num_draws: int = 1
     ) -> torch.Tensor:
+
+        # ensure that both mean and variance are positive (to avoid error of invalid values):
         z = td.Normal(z_mean, z_var).rsample((num_draws,)).transpose(0, 1)
         return z.squeeze(1) if z.shape[1] == 1 else z
