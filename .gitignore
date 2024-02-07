@@ -1,2 +1,3 @@
 emg_data_folder/emg/EMG_data.pkl
 emg_data_folder/labels/LABELS_EMG_data.pkl
+test_MPS.py

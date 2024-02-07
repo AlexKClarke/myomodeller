@@ -46,14 +46,15 @@ class RawEMGLabelled(LoaderModule):
             output_shape=train_emg.shape[1:],
         )
 
+
     def _get_data(
         self,
-        file_path,
-        test_fraction,
-        group_size,
-        one_hot_labels,
-        shuffle_data,
-        flatten_input,
+        file_path: str = 'emg_data_folder',
+        test_fraction: float = 0.2,
+        group_size: int = 1,
+        shuffle_data: bool = True,
+        one_hot_labels: bool = False,
+        flatten_input: bool = False
     ):
         """Loads paired EMG and MUs from demuse file"""
         print('Loading raw-EMG data...')

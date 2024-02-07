@@ -224,7 +224,6 @@ class ConvTranspose2dBlock(nn.Module):
         self.block.append(nn.Flatten())
         self.block.append(nn.Linear(flat_output_dim, flat_linear_out_dim))
         self.block.append(nn.ReLU())
-        #self.block.append(Reshape((linear_out_chan, h_dim[0], h_dim[0])))
         self.block.append(Reshape((linear_out_chan, h_dim[0], w_dim[0])))
 
         in_channel = linear_out_chan

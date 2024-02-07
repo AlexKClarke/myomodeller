@@ -26,23 +26,24 @@ if __name__ == "__main__":
             "network_config": {
                 "network_name": "sparse.Conv2dSparseAutoencoder",
                 "network_kwargs": {
-                    "input_shape": [1, 8, 8],
-                    "output_shape": [1, 8, 8],
+                    "input_shape": [1, 28, 28],
+                    "output_shape": [1, 28, 28],
                     "sparse_dim": 2,
                     "out_chans_per_layer": [4, 8],
                 },
             },
         },
         "loader_module_config": {
-            "loader_module_name": "MNIST",
+            "loader_module_name": "MNIST28",
             "loader_module_kwargs": {"batch_size": 64, "auto": True},
         },
         "trainer_kwargs": {
             "accelerator": "gpu",
             "devices": 1,
-            "max_epochs": 200,
+            "max_epochs": 10,
             "log_every_n_steps": 10,
         },
+        "latents_visualization": True,
     }
 
     # Once the config is defined it can be passed to an instance of the
