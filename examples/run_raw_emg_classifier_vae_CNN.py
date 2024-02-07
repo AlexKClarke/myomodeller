@@ -22,13 +22,13 @@ if __name__ == "__main__":
                 "optimizer": "AdamW",
                 "optimizer_kwargs": {"lr": 0.01},
                 "beta_step": 1e-2,
-                "max_beta": 1.0,
+                "max_beta": 1.5,
             },
             "maximize_val_target": True,
             "network_config": {
                 "network_name": "vae.Conv2dVariationalAutoencoder",
                 "network_kwargs": {
-                    "latent_dim": 2,
+                    "latent_dim": 10,
                     "kernel_size_per_layer": [(25, 1), (10, 1)], # (time, channels) for each lay
                     "stride_per_layer": [(10, 1), (5, 1)], # (time, channels)
                     "out_chans_per_layer": [10, 20],
@@ -45,12 +45,13 @@ if __name__ == "__main__":
                 "batch_size": 32,
                 "one_hot_labels": False,
                 "shuffle_data": True,
+                "flatten_input": False,
             },
         },
         "trainer_kwargs": {
             "accelerator": "gpu",
             "devices": 1,
-            "max_epochs": 5,
+            "max_epochs": 100,
             "log_every_n_steps": 10,
         },
 

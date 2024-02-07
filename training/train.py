@@ -232,7 +232,7 @@ class TrainingModule:
                 loader_module.train_data_present and loader_module.val_data_present
             ), "Loader module needs train and validation data for train mode."
 
-        # Begin training if not in test mode
+        # Begin TRAINING if not in test mode
         if test_mode is False:
             trainer_module.fit(
                 update_module,
@@ -241,7 +241,7 @@ class TrainingModule:
             )
 
 
-        # Run testing
+        # Run TESTING
         if loader_module.test_data_present:
             ckpt_path = config["ckpt_path"] if test_mode else None
             trainer_module.test(
@@ -252,15 +252,20 @@ class TrainingModule:
 
             # VISUALIZATION
             if config["latents_visualization"] == True:
-                dataset = loader_module._get_data(flatten_input=config["loader_module_config"]["loader_module_kwargs"]["flatten_input"])
+
+                dataset = loader_module._get_data()
                 loader_module.test_dataset.tensors[0]
                 data = dataset[4]
                 labels = dataset[5]
 
 
                 from visualization_modules import latents_visualization
-                vis_test = latents_visualization.VisualizeLatentSpace(data, labels, trainer_module, loader_module, config)
-                vis_test.plot_latent_space()
+                from visualization_modules import reconstructed_sample_visualization
+                '''vis_test = latents_visualization.VisualizeLatentSpace(data, labels, trainer_module, loader_module, config)
+                vis_test.plot_latent_space()'''
+
+                vis_test = reconstructed_sample_visualization.VisualizeReconstructedSamples(data, labels, trainer_module, loader_module, config)
+                vis_test.plot_reconstructed_input()
 
         # Add latest ckpt path to config
         if test_mode is False:
