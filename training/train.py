@@ -265,7 +265,7 @@ class TrainingModule:
                 vis_test.plot_latent_space()'''
 
                 vis_test = reconstructed_sample_visualization.VisualizeReconstructedSamples(data, labels, trainer_module, loader_module, config)
-                vis_test.plot_reconstructed_input()
+                original_data, recontructed_data = vis_test.plot_reconstructed_input()
 
         # Add latest ckpt path to config
         if test_mode is False:

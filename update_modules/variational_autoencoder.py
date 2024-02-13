@@ -44,13 +44,15 @@ class VariationalAutoencoder(UpdateModule):
         #todo: DOES THIS MAKE SENSE?
         # it adds a small epsilon to any element that is not greater than 0
         # issue: the error is not always solved
-        min_value = z_var.min().item()
+        '''min_value = z_var.min().item()
         epsilon = min_value
         if epsilon > 1e-18:
             epsilon = 1e-18
         # Add 1/10 of the smallest element to any element not greater than 0
-        z_var = torch.where(z_var > 0, z_var, z_var + epsilon)
+        z_var = torch.where(z_var > 0, z_var, z_var + epsilon)'''
         ######################
+
+        z_var = z_var.clamp(min=1e-36)
 
         z = self.network.sample_posterior(z_mean, z_var)
         recon_mean, recon_var = self.network.decode(z)

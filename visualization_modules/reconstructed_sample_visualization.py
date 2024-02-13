@@ -29,6 +29,7 @@ class VisualizeReconstructedSamples():
         self.trainer_module = trainer_module
         self.loader_module = loader_module
         self.config = config
+        self.reconstructed_data = None
 
     def plot_reconstructed_input(self):
         '''if self.config["loader_module_config"]["loader_module_kwargs"]["flatten_input"] == True:
@@ -62,6 +63,9 @@ class VisualizeReconstructedSamples():
 
         # Show the plot
         plt.show()
+
+        self.reconstructed_data = reconstructed_data
+        return original_data, reconstructed_data
 
 
 
