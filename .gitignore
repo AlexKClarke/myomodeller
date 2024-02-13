@@ -3,3 +3,8 @@ original_data.pkl
 .idea/
 /logs/
 /emg_data_folder/
+/loader_modules/raw_emg.py
+/loader_modules/mnist28.py
+/examples/run_raw_emg_classifier_vae_CNN.py
+/examples/run_mnist_variational_autoencoder_MPL.py
+/examples/run_mnist_variational_autoencoder_CNN.py
