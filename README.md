@@ -1,0 +1,1 @@
+Pyrepo is intended to serve as a repository of modules needed for various signal analysis projects using deep learning. It also will be used as a set of examples for PhD and Masters students who want to develop the machine learning elements of their research.

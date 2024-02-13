@@ -1,0 +1,83 @@
+{
+    "log_name": "mnist_vae",
+    "update_module_config": {
+        "update_module_name": "IOVariationalAutoencoder",
+        "update_module_kwargs": {
+            "optimizer": "multimodel",
+            "optimizer_kwargs": {
+                "0": {
+                    "optimizer": "AdamW",
+                    "optimizer_kwargs": {
+                        "lr": 0.001
+                    }
+                },
+                "1": {
+                    "optimizer": "AdamW",
+                    "optimizer_kwargs": {
+                        "lr": 0.001
+                    }
+                }
+            },
+            "beta_step": 0.01,
+            "max_beta": 1.0,
+            "n_steps_per_switch": 5,
+            "n_samples_in_aux": 16
+        },
+        "maximize_val_target": false,
+        "network_config": {
+            "network_name": "multimodel",
+            "network_kwargs": {
+                "0": {
+                    "network_name": "vae.MLPVariationalAutoencoder",
+                    "network_kwargs": {
+                        "latent_dim": 3,
+                        "out_chans_per_layer": [
+                            32,
+                            32
+                        ],
+                        "fix_recon_var": false,
+                        "input_shape": [
+                            64
+                        ],
+                        "output_shape": [
+                            64
+                        ]
+                    }
+                },
+                "1": {
+                    "network_name": "blocks.MLPBlock",
+                    "network_kwargs": {
+                        "input_shape": [
+                            3
+                        ],
+                        "output_shape": [
+                            1
+                        ],
+                        "out_chans_per_layer": [
+                            32,
+                            32
+                        ],
+                        "output_activation": "Sigmoid"
+                    }
+                },
+                "input_shape": [
+                    64
+                ],
+                "output_shape": [
+                    64
+                ]
+            }
+        },
+        "hpo_mode": false
+    },
+    "loader_module_config": {
+        "loader_module_name": "MNIST",
+        "loader_module_kwargs": {
+            "batch_size": 32,
+            "auto": true,
+            "flatten_input": true
+        }
+    },
+    "ckpt_path": null,
+    "version": 68
+}
