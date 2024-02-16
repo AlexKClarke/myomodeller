@@ -1,0 +1,12 @@
+numpy
+ray
+ray[tune]
+pyarrow
+torch
+torchvision
+scikit-learn
+pytorch-lightning
+pandas
+tensorboard
+tensorboardX
+matplotlib
