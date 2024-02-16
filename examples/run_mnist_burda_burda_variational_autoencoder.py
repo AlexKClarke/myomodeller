@@ -20,9 +20,10 @@ if __name__ == "__main__":
             "update_module_kwargs": {
                 "optimizer": "AdamW",
                 "optimizer_kwargs": {"lr": 0.001},
+                "starting_beta": 0.0,
                 "beta_step": 1e-2,
                 "max_beta": 1.0,
-                "burda_samples": 5,
+                "burda_samples": 2,
             },
             "maximize_val_target": False,
             "network_config": {
@@ -42,6 +43,13 @@ if __name__ == "__main__":
                 "flatten_input": False,
             },
         },
+
+        "trainer_kwargs": {
+            "accelerator": "gpu",
+            "devices": 1,
+            "max_epochs": 50,
+            "log_every_n_steps": 1,
+        },
     }
 
     # Once the config is defined it can be passed to an instance of the
@@ -52,7 +60,7 @@ if __name__ == "__main__":
     training_module.train()
 
     '''"trainer_kwargs": {
-        "accelerator": "cpu",
+        "accelerator": "gpu",
         "devices": 1,
         "max_epochs": 200,
         "log_every_n_steps": 1,

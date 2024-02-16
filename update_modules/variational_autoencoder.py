@@ -17,6 +17,7 @@ class VariationalAutoencoder(UpdateModule):
         optimizer_kwargs: Optional[Dict] = None,
         lr_scheduler_kwargs: Optional[Dict] = None,
         early_stopping_kwargs: Optional[Dict] = None,
+        starting_beta: float = 0.0,
         beta_step: float = 1e-2,
         max_beta: float = 1.0,
     ):
@@ -30,7 +31,7 @@ class VariationalAutoencoder(UpdateModule):
             early_stopping_kwargs,
         )
 
-        self.beta = 0.0
+        self.beta = starting_beta
         self.beta_step = beta_step
         self.max_beta = max_beta
 

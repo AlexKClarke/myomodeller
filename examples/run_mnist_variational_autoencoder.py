@@ -20,6 +20,7 @@ if __name__ == "__main__":
             "update_module_kwargs": {
                 "optimizer": "AdamW",
                 "optimizer_kwargs": {"lr": 0.001},
+                "starting_beta": 0.0,
                 "beta_step": 1e-2,
                 "max_beta": 1.0,
             },

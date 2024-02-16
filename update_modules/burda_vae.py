@@ -17,9 +17,10 @@ class BurdaVariationalAutoencoder(UpdateModule):
         optimizer_kwargs: Optional[Dict] = None,
         lr_scheduler_kwargs: Optional[Dict] = None,
         early_stopping_kwargs: Optional[Dict] = None,
+        starting_beta: float = 0.0,
         beta_step: float = 1e-2,
         max_beta: float = 1.0,
-        burda_samples: int = 5,
+        burda_samples: int = 64,
     ):
         super().__init__(
             network,
@@ -31,7 +32,7 @@ class BurdaVariationalAutoencoder(UpdateModule):
             early_stopping_kwargs,
         )
 
-        self.beta = 0.0
+        self.beta = starting_beta
         self.beta_step = beta_step
         self.max_beta = max_beta
         self.burda_samples = burda_samples
@@ -40,7 +41,17 @@ class BurdaVariationalAutoencoder(UpdateModule):
     def _calculate_burda_likelihood(self, x: torch.Tensor, burda_samples: int):
         # Get the posterior and reconstuction parameters
         z_mean, z_var = self.network.encode(x)
+
+        z_var = z_var.clamp(1e-36)
+
+        # to test nan error
+        '''if z_var.min().item() < 2e-36:
+            print("Low variance")
+            print(z_mean.min().item())
+            pass'''
+
         z = self.network.sample_posterior(z_mean, z_var, burda_samples)
+
         recon_mean, recon_var = self.network.decode(z) # returns (batch_size, burda_samples, 1, heigth, width) for both mean and variance
 
         # Expand matrices for the burda reps
