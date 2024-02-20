@@ -17,9 +17,10 @@ class IOVariationalAutoencoder(UpdateModule):
         optimizer_kwargs: Optional[Dict] = None,
         lr_scheduler_kwargs: Optional[Dict] = None,
         early_stopping_kwargs: Optional[Dict] = None,
+        starting_beta: float = 0.0,
         beta_step: float = 1e-2,
         max_beta: float = 1.0,
-        n_steps_per_switch: int = 5,
+        #n_steps_per_switch: int = 5,
         network_training_steps: list = [10, 10],
         n_samples_in_aux: int = 16,
     ):
@@ -33,10 +34,10 @@ class IOVariationalAutoencoder(UpdateModule):
             early_stopping_kwargs,
         )
 
-        self.beta = 0.0
+        self.beta = starting_beta
         self.beta_step = beta_step
         self.max_beta = max_beta
-        self.n_steps_per_switch = n_steps_per_switch
+        #self.n_steps_per_switch = n_steps_per_switch
         self.network_training_steps = network_training_steps
         self.n_samples_in_aux = n_samples_in_aux
 

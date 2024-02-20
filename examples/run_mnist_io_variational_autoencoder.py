@@ -29,9 +29,10 @@ if __name__ == "__main__":
                         "optimizer_kwargs": {"lr": 0.01},
                     },
                 },
+                "starting_beta": 0.5,
                 "beta_step": 1e-2,
-                "max_beta": 1,
-                "n_steps_per_switch": 5,
+                "max_beta": 1.0,
+                #"n_steps_per_switch": 5,
                 "network_training_steps": [20, 10],
                 "n_samples_in_aux": 32,
             },
@@ -43,8 +44,8 @@ if __name__ == "__main__":
                     0: {
                         "network_name": "vae.MLPVariationalAutoencoder",
                         "network_kwargs": {
-                            "latent_dim": 5,
-                            "out_chans_per_layer": [256, 128, 64],
+                            "latent_dim": 2,
+                            "out_chans_per_layer": [64, 32],
                             "fix_recon_var": False,
                         },
                     },
@@ -52,9 +53,9 @@ if __name__ == "__main__":
                     1: {
                         "network_name": "blocks.MLPBlock",
                         "network_kwargs": {
-                            "input_shape": [5],
+                            "input_shape": [2],
                             "output_shape": [1],
-                            "out_chans_per_layer": [8, 8],
+                            "out_chans_per_layer": [32, 32],
                             "output_activation": "Sigmoid",
                         },
                     },
@@ -62,9 +63,9 @@ if __name__ == "__main__":
             },
         },
         "loader_module_config": {
-            "loader_module_name": "MNIST28",
+            "loader_module_name": "MNIST",
             "loader_module_kwargs": {
-                "batch_size": 32,
+                "batch_size": 64,
                 "auto": True,
                 "flatten_input": True,
             },
@@ -75,7 +76,7 @@ if __name__ == "__main__":
         "trainer_kwargs": {
             "accelerator": "gpu",
             "devices": 1,
-            "max_epochs": 100,
+            "max_epochs": 150,
             "log_every_n_steps": 1,
         },
 

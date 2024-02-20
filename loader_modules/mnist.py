@@ -86,6 +86,10 @@ class MNIST(LoaderModule):
             for images in [train_images, val_images, test_images]
         ]
 
+        print('Train size: ', np.shape(train_images)[0])
+        print('Test size: ', np.shape(test_images)[0])
+        print('Validation size: ', np.shape(val_images)[0])
+
         return (
             train_images,
             train_labels,
