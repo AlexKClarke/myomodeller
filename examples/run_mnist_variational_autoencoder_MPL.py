@@ -20,6 +20,7 @@ if __name__ == "__main__":
             "update_module_kwargs": {
                 "optimizer": "AdamW",
                 "optimizer_kwargs": {"lr": 0.001},
+                "starting_beta": 0.0,
                 "beta_step": 1e-2,
                 "max_beta": 1.0,
             },
@@ -27,25 +28,22 @@ if __name__ == "__main__":
             "network_config": {
                 "network_name": "vae.MLPVariationalAutoencoder",
                 "network_kwargs": {
-                    "latent_dim": 3,
-                    "out_chans_per_layer": [256, 128],
+                    "latent_dim": 2,
+                    "out_chans_per_layer": [128, 128],
                     "fix_recon_var": False,
                 },
             },
         },
         "loader_module_config": {
-            "loader_module_name": "MNIST",
+            "loader_module_name": "MNIST28",
             "loader_module_kwargs": {
-                "batch_size": 32,
+                "batch_size": 64,
                 "auto": True,
                 "flatten_input": True,
             },
         },
         "trainer_kwargs": {
-            "accelerator": "gpu",
-            "devices": 1,
-            "max_epochs": 20,
-            "log_every_n_steps": 1,
+            "max_epochs": 100,
         },
 
         "latents_visualization": True,
@@ -61,7 +59,7 @@ if __name__ == "__main__":
 
 
     '''"trainer_kwargs": {
-        "accelerator": "cpu",
+        "accelerator": "gpu",
         "devices": 1,
         "max_epochs": 10,
         "log_every_n_steps": 1,

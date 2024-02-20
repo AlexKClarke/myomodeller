@@ -261,11 +261,11 @@ class TrainingModule:
 
                 from visualization_modules import latents_visualization
                 from visualization_modules import reconstructed_sample_visualization
-                '''vis_test = latents_visualization.VisualizeLatentSpace(data, labels, trainer_module, loader_module, config)
-                vis_test.plot_latent_space()'''
+                vis_test = latents_visualization.VisualizeLatentSpace(data, labels, trainer_module, loader_module, config)
+                vis_test.plot_latent_space()
 
-                vis_test = reconstructed_sample_visualization.VisualizeReconstructedSamples(data, labels, trainer_module, loader_module, config)
-                vis_test.plot_reconstructed_input()
+                '''vis_test = reconstructed_sample_visualization.VisualizeReconstructedSamples(data, labels, trainer_module, loader_module, config)
+                vis_test.plot_reconstructed_input()'''
 
         # Add latest ckpt path to config
         if test_mode is False:
