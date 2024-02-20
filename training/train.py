@@ -239,6 +239,13 @@ class TrainingModule:
                 ckpt_path=config["ckpt_path"],
             )
 
+        dataset = loader_module._get_data()
+        loader_module.test_dataset.tensors[0]
+        data = dataset[4]
+        labels = dataset[5]
+
+
+
         # Run testing
         if loader_module.test_data_present:
             ckpt_path = config["ckpt_path"] if test_mode else None

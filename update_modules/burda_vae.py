@@ -57,7 +57,11 @@ class BurdaVariationalAutoencoder(UpdateModule):
         # Expand matrices for the burda reps
         z_mean = z_mean.unsqueeze(1).repeat(1, burda_samples, 1)
         z_var = z_var.unsqueeze(1).repeat(1, burda_samples, 1)
-        x = x.repeat(1, burda_samples, 1, 1)
+
+        if len(x.size()) == 2: # if flattened input (for MLP)
+            x = x.unsqueeze(1).repeat(1, burda_samples, 1)
+        else: # if unflattened input (for CNN)
+            x = x.repeat(1, burda_samples, 1, 1)
 
         # Create distributions
         posterior_dist = td.MultivariateNormal(z_mean, z_var.diag_embed())
@@ -66,7 +70,10 @@ class BurdaVariationalAutoencoder(UpdateModule):
 
         # Calculate log probabilities
         p_hi = prior_dist.log_prob(z)
-        p_xGhi = recon_dist.log_prob(x).sum((-1, -2))  # Sum along the image dimensions
+        if len(x.size()) == 3: # if flattened input (for MLP)
+            p_xGhi = recon_dist.log_prob(x).sum(-1)
+        else: # if unflattened input (for CNN)
+            p_xGhi = recon_dist.log_prob(x).sum((-1, -2))  # Sum along the image dimensions
         q_hiGx = posterior_dist.log_prob(z)
 
         # Calculate the ratio

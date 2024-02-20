@@ -23,14 +23,15 @@ if __name__ == "__main__":
                 "starting_beta": 0.0,
                 "beta_step": 1e-2,
                 "max_beta": 1.0,
-                "burda_samples": 2,
+                "burda_samples": 32,
             },
             "maximize_val_target": False,
             "network_config": {
-                "network_name": "vae.Conv2dVariationalAutoencoder",
+                #"network_name": "vae.Conv2dVariationalAutoencoder",
+                "network_name": "vae.MLPVariationalAutoencoder",
                 "network_kwargs": {
-                    "latent_dim": 3,
-                    "out_chans_per_layer": [16, 32],
+                    "latent_dim": 2,
+                    "out_chans_per_layer": [32, 32],
                     "fix_recon_var": False,
                 },
             },
@@ -38,16 +39,16 @@ if __name__ == "__main__":
         "loader_module_config": {
             "loader_module_name": "MNIST",
             "loader_module_kwargs": {
-                "batch_size": 32,
+                "batch_size": 64,
                 "auto": True,
-                "flatten_input": False,
+                "flatten_input": True,
             },
         },
 
         "trainer_kwargs": {
             "accelerator": "gpu",
             "devices": 1,
-            "max_epochs": 50,
+            "max_epochs": 100,
             "log_every_n_steps": 1,
         },
     }
