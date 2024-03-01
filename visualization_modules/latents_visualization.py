@@ -1,4 +1,8 @@
 import matplotlib.pyplot as plt
+import matplotlib as mpl
+mpl.use('macosx')
+
+
 
 class VisualizeLatentSpace:
     """
@@ -54,6 +58,8 @@ class VisualizeLatentSpace:
 
         # Show the plots
         plt.show()
+
+        return mean_list, var_list
 
 
 

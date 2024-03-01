@@ -1,6 +1,8 @@
 from sklearn.datasets import load_digits
+import torch.nn.functional as F
 from torch.nn.functional import one_hot
 import numpy as np
+
 
 from training import LoaderModule
 from loader_modules.utils import (
@@ -23,6 +25,7 @@ class MNIST28(LoaderModule):
         auto: bool = False,
         one_hot_labels: bool = False,
         flatten_input: bool = False,
+        downsample_pooling_size: tuple = (1, 1),
     ):
         (
             train_images,
@@ -31,7 +34,7 @@ class MNIST28(LoaderModule):
             val_labels,
             test_images,
             test_labels,
-        ) = self._get_data(one_hot_labels, flatten_input)
+        ) = self._get_data(one_hot_labels, flatten_input, downsample_pooling_size)
 
         super().__init__(
             train_data=[train_images, train_images if auto else train_labels],
@@ -42,7 +45,7 @@ class MNIST28(LoaderModule):
             output_shape=train_images.shape[1:] if auto else train_labels.shape[1:],
         )
 
-    def _get_data(self, one_hot_labels: bool = False, flatten_input: bool = False):
+    def _get_data(self, one_hot_labels: bool = False, flatten_input: bool = False, downsample_pooling_size: tuple = (1, 1)):
         """Loads MNIST digits from scikit.datasets"""
         print('Loading MNIST28 digits...')
 
@@ -74,6 +77,10 @@ class MNIST28(LoaderModule):
             [val_images, val_labels],
             [test_images, test_labels],
         ) = [array_to_tensor(data) for data in [train_data, val_data, test_data]]
+
+        train_images = F.max_pool2d(train_images, kernel_size=downsample_pooling_size, stride=downsample_pooling_size).squeeze(1)
+        test_images = F.max_pool2d(test_images, kernel_size=downsample_pooling_size, stride=downsample_pooling_size).squeeze(1)
+        val_images = F.max_pool2d(val_images, kernel_size=downsample_pooling_size, stride=downsample_pooling_size).squeeze(1)
 
         # If flattening is necessary
         if flatten_input:

@@ -69,6 +69,9 @@ class IOVariationalAutoencoder(UpdateModule):
     def _calculate_elbo_terms_io(self, x: torch.Tensor):
         # Get the posterior and reconstuction parameters
         z_mean, z_var = self.network[0].encode(x)
+        z_var = torch.clamp(z_var, 1e-36)
+
+
         z = self.network[0].sample_posterior(z_mean, z_var)
         recon_mean, recon_var = self.network[0].decode(z)
 
