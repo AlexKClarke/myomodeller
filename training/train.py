@@ -260,7 +260,6 @@ class TrainingModule:
         plt.xlabel('Latent 1')
         plt.ylabel('Latent 2')
         plt.show()
-
         #############################
 
 
