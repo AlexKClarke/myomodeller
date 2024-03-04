@@ -62,13 +62,13 @@ class MLPVariationalAutoencoder(nn.Module):
 
         self.encoder = MLPBlock(
             input_shape=input_shape,
-            output_shape=[latent_dim * 2],
+            output_shape=[latent_dim * latent_dim * 2], # changed to account for multivariate mean and variance
             out_chans_per_layer=out_chans_per_layer,
             use_batch_norm=use_batch_norm,
         )
 
         self.decoder = MLPBlock(
-            input_shape=[latent_dim],
+            input_shape=[latent_dim * latent_dim],
             output_shape=output_shape,
             out_chans_per_layer=out_chans_per_layer[::-1],
             use_batch_norm=use_batch_norm,
@@ -78,7 +78,11 @@ class MLPVariationalAutoencoder(nn.Module):
         """Return a posterior mean and variance for a given input"""
 
         params = self.encoder(x)
+        # Extract mean and log variance
         z_mean, z_log_cov = params.split(params.shape[-1] // 2, dim=-1)
+        z_mean = z_mean.reshape(z_mean.shape[0], int(z_mean.shape[1]/2), int(z_mean.shape[1]/2))
+        z_log_cov = z_log_cov.reshape(z_log_cov.shape[0], int(z_log_cov.shape[1]/2), int(z_log_cov.shape[1]/2))
+
         return z_mean, z_log_cov.exp()
 
     def decode(self, z: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -98,6 +102,7 @@ class MLPVariationalAutoencoder(nn.Module):
         z = z.reshape((z_shape[0] * z_shape[1], z_shape[2]))
 
         # Get the reconstruction parameters
+        z = z.reshape(-1)
         recon_mean = self.decoder(z)
         recon_var = (
             self.recon_log_var.exp().unsqueeze(0).tile((recon_mean.shape[0], 1, 1, 1))
@@ -121,7 +126,8 @@ class MLPVariationalAutoencoder(nn.Module):
     def sample_posterior(
         self, z_mean: torch.Tensor, z_var: torch.Tensor, num_draws: int = 1
     ) -> torch.Tensor:
-        z = td.Normal(z_mean, z_var).rsample((num_draws,)).transpose(0, 1)
+        z_old = td.Normal(z_mean, z_var).rsample((num_draws,)).transpose(0, 1)
+        z = td.MultivariateNormal(z_mean, z_var).rsample((num_draws,)).transpose(0, 1)
         return z.squeeze(1) if z.shape[1] == 1 else z
 
 
