@@ -48,7 +48,7 @@ if __name__ == "__main__":
         "trainer_kwargs": {
             "accelerator": "gpu",
             "devices": 1,
-            "max_epochs": 100,
+            "max_epochs": 5,
             "log_every_n_steps": 1,
         },
     }
