@@ -80,8 +80,6 @@ class MLPVariationalAutoencoder(nn.Module):
         params = self.encoder(x)
         # Extract mean and log variance
         z_mean, z_log_cov = params.split(params.shape[-1] // 2, dim=-1)
-        z_mean = z_mean.reshape(z_mean.shape[0], int(z_mean.shape[1]/2), int(z_mean.shape[1]/2))
-        z_log_cov = z_log_cov.reshape(z_log_cov.shape[0], int(z_log_cov.shape[1]/2), int(z_log_cov.shape[1]/2))
 
         return z_mean, z_log_cov.exp()
 
@@ -102,7 +100,6 @@ class MLPVariationalAutoencoder(nn.Module):
         z = z.reshape((z_shape[0] * z_shape[1], z_shape[2]))
 
         # Get the reconstruction parameters
-        z = z.reshape(-1)
         recon_mean = self.decoder(z)
         recon_var = (
             self.recon_log_var.exp().unsqueeze(0).tile((recon_mean.shape[0], 1, 1, 1))

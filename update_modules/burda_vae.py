@@ -50,6 +50,11 @@ class BurdaVariationalAutoencoder(UpdateModule):
             print(z_mean.min().item())
             pass'''
 
+        z_mean = z_mean.reshape(z_mean.shape[0], int(z_mean.shape[1] / 2), int(z_mean.shape[1] / 2))
+        z_var = z_var.reshape(z_var.shape[0], int(z_var.shape[1] / 2), int(z_var.shape[1] / 2))
+
+
+
         z = self.network.sample_posterior(z_mean, z_var, burda_samples)
 
         recon_mean, recon_var = self.network.decode(z) # returns (batch_size, burda_samples, 1, heigth, width) for both mean and variance
