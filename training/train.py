@@ -239,6 +239,9 @@ class TrainingModule:
                 ckpt_path=config["ckpt_path"],
             )
 
+
+        # VISUALIZATION TEST
+        #############################
         dataset = loader_module._get_data()
         loader_module.test_dataset.tensors[0]
         data = dataset[4]
@@ -249,12 +252,16 @@ class TrainingModule:
         mean_list, var = vae_model.network.encode(data_batch)
 
         import matplotlib.pyplot as plt
+        import matplotlib as mpl
+        mpl.use('macosx')
 
         scatter1 = plt.scatter(mean_list.detach().numpy()[:, 0], mean_list.detach().numpy()[:, 1], c=labels, cmap='viridis')  # change colour for each latent
         plt.title('Mean Plot')
         plt.xlabel('Latent 1')
         plt.ylabel('Latent 2')
         plt.show()
+
+        #############################
 
 
 
