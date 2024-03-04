@@ -245,7 +245,7 @@ class TrainingModule:
         labels = dataset[5]
 
         vae_model = trainer_module.model
-        mean_list, var = vae_model.encode(data)
+        mean_list, var = vae_model.network.encode(data)
 
         import matplotlib.pyplot as plt
 
