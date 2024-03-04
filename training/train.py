@@ -243,18 +243,18 @@ class TrainingModule:
         loader_module.test_dataset.tensors[0]
         data = dataset[4]
         labels = dataset[5]
+        data_batch = data.reshape(data.size()[0], -1)
 
         vae_model = trainer_module.model
-        mean_list, var = vae_model.network.encode(data)
+        mean_list, var = vae_model.network.encode(data_batch)
 
         import matplotlib.pyplot as plt
 
-
-
-        scatter1 = plt.scatter(mean_list.detach().numpy()[:, 0], mean_list.detach().numpy()[:, 1], c=self.labels, cmap='viridis')  # change colour for each latent
+        scatter1 = plt.scatter(mean_list.detach().numpy()[:, 0], mean_list.detach().numpy()[:, 1], c=labels, cmap='viridis')  # change colour for each latent
         plt.title('Mean Plot')
         plt.xlabel('Latent 1')
         plt.ylabel('Latent 2')
+        plt.show()
 
 
 
