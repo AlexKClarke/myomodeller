@@ -50,18 +50,13 @@ class BurdaVariationalAutoencoder(UpdateModule):
             print(z_mean.min().item())
             pass'''
 
-        z_mean = z_mean.reshape(z_mean.shape[0], int(z_mean.shape[1] / 2), int(z_mean.shape[1] / 2))
-        z_var = z_var.reshape(z_var.shape[0], int(z_var.shape[1] / 2), int(z_var.shape[1] / 2))
-
-
-
         z = self.network.sample_posterior(z_mean, z_var, burda_samples)
 
         recon_mean, recon_var = self.network.decode(z) # returns (batch_size, burda_samples, 1, heigth, width) for both mean and variance
 
         # Expand matrices for the burda reps
         z_mean = z_mean.unsqueeze(1).repeat(1, burda_samples, 1)
-        z_var = z_var.unsqueeze(1).repeat(1, burda_samples, 1)
+        z_var = z_var.unsqueeze(1).repeat(1, burda_samples, 1, 1)
 
         if len(x.size()) == 2: # if flattened input (for MLP)
             x = x.unsqueeze(1).repeat(1, burda_samples, 1)
@@ -69,9 +64,16 @@ class BurdaVariationalAutoencoder(UpdateModule):
             x = x.repeat(1, burda_samples, 1, 1)
 
         # Create distributions
-        posterior_dist = td.MultivariateNormal(z_mean, z_var.diag_embed())
-        prior_dist = td.MultivariateNormal(torch.zeros_like(z_mean), torch.ones_like(z_var).diag_embed())
-        recon_dist = td.Normal(recon_mean.squeeze(), recon_var.squeeze())
+        #posterior_dist = td.MultivariateNormal(z_mean, z_var.diag_embed())
+        z_var = z_var @ z_var.transpose(-1, -2)  # ensure covariance matrix is positive definite #todo: ok to do this?
+        posterior_dist = td.MultivariateNormal(z_mean, z_var) # z_var is now the covariance matrix already, no need to use diag_embed()
+
+        zero_mean = torch.zeros_like(z_mean)
+        unit_variance = torch.ones_like(z_var)
+        unit_variance = unit_variance @ unit_variance.transpose(-1, -2)
+
+        prior_dist = td.MultivariateNormal(zero_mean, unit_variance)
+        recon_dist = td.Normal(recon_mean.squeeze(), recon_var.squeeze()) #todo: reconstruction can reamin normal distribution correct?
 
         # Calculate log probabilities
         p_hi = prior_dist.log_prob(z)

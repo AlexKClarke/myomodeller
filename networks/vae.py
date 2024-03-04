@@ -62,13 +62,13 @@ class MLPVariationalAutoencoder(nn.Module):
 
         self.encoder = MLPBlock(
             input_shape=input_shape,
-            output_shape=[latent_dim * latent_dim * 2], # changed to account for multivariate mean and variance
+            output_shape=[latent_dim + latent_dim * latent_dim], # changed to account for multivariate mean and variance
             out_chans_per_layer=out_chans_per_layer,
             use_batch_norm=use_batch_norm,
         )
 
         self.decoder = MLPBlock(
-            input_shape=[latent_dim * latent_dim],
+            input_shape=[latent_dim],
             output_shape=output_shape,
             out_chans_per_layer=out_chans_per_layer[::-1],
             use_batch_norm=use_batch_norm,
@@ -77,9 +77,13 @@ class MLPVariationalAutoencoder(nn.Module):
     def encode(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """Return a posterior mean and variance for a given input"""
 
-        params = self.encoder(x)
         # Extract mean and log variance
-        z_mean, z_log_cov = params.split(params.shape[-1] // 2, dim=-1)
+        params = self.encoder(x)
+
+        z_mean, z_log_cov_1, z_log_cov_2 = params.split(params.shape[-1] // 3, dim=-1)
+        z_log_cov = torch.cat((z_log_cov_1, z_log_cov_2), dim=-1)
+
+        z_log_cov = z_log_cov.reshape(z_log_cov.shape[0], int(z_log_cov.shape[1] / 2), int(z_log_cov.shape[1] / 2))
 
         return z_mean, z_log_cov.exp()
 
@@ -114,6 +118,14 @@ class MLPVariationalAutoencoder(nn.Module):
 
         return recon_mean, recon_var
 
+    def ensure_positive_definite(self, covariance_matrix_tensor):
+        # Ensure the covariance matrix is positive definite using Cholesky decomposition
+        covariance_matrix_tensor = torch.matmul(covariance_matrix_tensor, covariance_matrix_tensor.transpose(-1, -2))
+        cholesky_factor = torch.linalg.cholesky(covariance_matrix_tensor)
+        covariance_matrix_tensor = torch.matmul(cholesky_factor, cholesky_factor.transpose(-1, -2))
+
+        return covariance_matrix_tensor
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Reconstructs input for testing using mean of posterior and recon"""
 
@@ -123,7 +135,10 @@ class MLPVariationalAutoencoder(nn.Module):
     def sample_posterior(
         self, z_mean: torch.Tensor, z_var: torch.Tensor, num_draws: int = 1
     ) -> torch.Tensor:
-        z_old = td.Normal(z_mean, z_var).rsample((num_draws,)).transpose(0, 1)
+
+        #TODO: Either methods don't work to ensure positive-definitness
+        z_var = z_var @ z_var.transpose(-1, -2) # ensure covariance matrix is positive definite
+        z_var = self.ensure_positive_definite(z_var)
         z = td.MultivariateNormal(z_mean, z_var).rsample((num_draws,)).transpose(0, 1)
         return z.squeeze(1) if z.shape[1] == 1 else z
 
