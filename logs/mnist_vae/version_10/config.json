@@ -1,0 +1,56 @@
+{
+    "log_name": "mnist_vae",
+    "update_module_config": {
+        "update_module_name": "VariationalAutoencoder",
+        "update_module_kwargs": {
+            "optimizer": "AdamW",
+            "optimizer_kwargs": {
+                "lr": 0.01
+            },
+            "starting_beta": 0.0,
+            "beta_step": 0.01,
+            "max_beta": 1.0
+        },
+        "maximize_val_target": false,
+        "network_config": {
+            "network_name": "vae.Conv2dVariationalAutoencoder",
+            "network_kwargs": {
+                "latent_dim": 2,
+                "kernel_size_per_layer": 8,
+                "stride_per_layer": 1,
+                "out_chans_per_layer": [
+                    20
+                ],
+                "fix_recon_var": false,
+                "input_shape": [
+                    1,
+                    8,
+                    8
+                ],
+                "output_shape": [
+                    1,
+                    8,
+                    8
+                ]
+            }
+        },
+        "hpo_mode": false
+    },
+    "loader_module_config": {
+        "loader_module_name": "MNIST",
+        "loader_module_kwargs": {
+            "batch_size": 64,
+            "auto": true,
+            "flatten_input": false
+        }
+    },
+    "trainer_kwargs": {
+        "accelerator": "gpu",
+        "devices": 1,
+        "max_epochs": 100,
+        "log_every_n_steps": 10
+    },
+    "latents_visualization": true,
+    "ckpt_path": "/Users/mp1319/Desktop/MyoModeller/myomodeller/logs/mnist_vae/version_10/checkpoints/epoch=0-step=18.ckpt",
+    "version": 10
+}

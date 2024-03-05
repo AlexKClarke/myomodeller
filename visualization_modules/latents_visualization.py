@@ -1,5 +1,9 @@
 import matplotlib.pyplot as plt
 
+import matplotlib as mpl
+mpl.use('macosx')
+
+
 class VisualizeLatentSpace:
     """
     Class used for the visualization of the 2D latent space, parametrised by the mean and variance of each latent

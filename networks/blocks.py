@@ -269,6 +269,7 @@ class Conv2dBlock(nn.Module):
         self.block.append(nn.Flatten())
         self.block.append(
             nn.Linear(flat_conv_dim, flat_output_dim, bias=use_output_bias)
+
         )
         self.block.append(Reshape(output_shape)) # reshape into the desired non-flattened output shape
         self.block.append(
@@ -281,3 +282,5 @@ class Conv2dBlock(nn.Module):
         for layer in self.block:
             x = layer(x)
         return x
+
+

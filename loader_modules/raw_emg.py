@@ -49,14 +49,13 @@ class RawEMGLabelled(LoaderModule):
 
     def _get_data(
         self,
-        file_path: str = 'emg_data_folder',
+        file_path: str = 'emg_data_folder/gesture_set_1',
         test_fraction: float = 0.2,
         group_size: int = 1,
         shuffle_data: bool = True,
         one_hot_labels: bool = False,
         flatten_input: bool = False
     ):
-        """Loads paired EMG and MUs from demuse file"""
         print('Loading raw-EMG data...')
 
         emg_data = []
@@ -67,21 +66,27 @@ class RawEMGLabelled(LoaderModule):
                 #emg
                 file_folder = os.path.join(file_path, 'emg', filename)
                 data = np.load(file_folder, allow_pickle=True)
+                data = np.array(data)
                 emg_data.append(data)
                 #labels
                 labels_folder = os.path.join(file_path, 'labels', 'LABELS_'+filename)
                 labels = np.load(labels_folder, allow_pickle=True)
+                labels = np.array(labels)
                 labels_data.append(labels)
 
         # convert to arrays
-        emg_data = np.array(emg_data)
-        labels_data = np.array(labels_data)
+        '''emg_data = np.array(emg_data)
+        labels_data = np.array(labels_data)'''
+
+        emg_data = np.concatenate(emg_data, axis=0)
+        labels_data = np.concatenate(labels_data)
         # swap axes
-        emg_data = np.swapaxes(emg_data, 0, 1)
-        labels_data = np.swapaxes(labels_data, 0, 1)
+        emg_data = np.swapaxes(emg_data, -1, -2)
+        #labels_data = np.swapaxes(labels_data, -1, -2)
         # convert to tensors
         emg_data = torch.tensor(emg_data)
         labels_data = torch.tensor(labels_data)
+        emg_data = emg_data.unsqueeze(1)
         # convert to float32 for gpu computation
         emg_data = emg_data.to(torch.float32)
         labels_data = labels_data.to(torch.float32)
@@ -95,6 +100,14 @@ class RawEMGLabelled(LoaderModule):
             indices = torch.randperm(num_samples)
             emg_data = emg_data[indices]
             labels_data = labels_data[indices]
+
+        # standardization - this loses information about channels....
+        # should compute the variance across the whole emg data instead
+        mean = torch.mean(emg_data, dim=-1, keepdim=True)
+        # std = torch.std(emg_data, dim=2, keepdim=True) # this loses information about channels....
+        # std = torch.std(emg_data, keepdim=True) # this computes std across all channels, time and trials.. information between channels is preserved, but trials are mixed
+        std = torch.std(emg_data, dim=[-1, -2], keepdim=True)  # this computes std across all channels and time.. information between channels is preserved and trials are not mixed
+        emg_data = (emg_data - mean) / std
 
 
 
@@ -136,6 +149,10 @@ class RawEMGLabelled(LoaderModule):
         [train_emg, val_emg, test_emg] = [
             ((e - mean) / std) for e in [train_emg, val_emg, test_emg]
         ]'''
+
+        print('Training samples: ', len(train_emg))
+        print('Test samples: ', len(test_emg))
+        print('Validation samples: ', len(val_emg))
 
         return (
             train_emg,

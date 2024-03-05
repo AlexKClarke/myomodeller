@@ -264,6 +264,42 @@ class TrainingModule:
                 '''vis_test = latents_visualization.VisualizeLatentSpace(data, labels, trainer_module, loader_module, config)
                 vis_test.plot_latent_space()'''
 
+                vae_model = trainer_module.model.network
+
+                latent_mean = vae_model.encode(data)[0]
+
+                import matplotlib as mpl
+                import matplotlib.pyplot as plt
+
+                mpl.use('macosx')
+
+                # Assuming 'data' is your N x m tensor
+                # N: Batch size, m: Number of features
+
+                latent_mean = latent_mean.detach().numpy()
+
+                # Step 1: Center the Data
+                mean_centered_data = latent_mean - np.mean(latent_mean, axis=0)
+
+                # Step 2: Compute the Covariance Matrix
+                covariance_matrix = np.cov(mean_centered_data, rowvar=False)
+
+                # Step 3: Compute Eigenvectors and Eigenvalues
+                eigenvalues, eigenvectors = np.linalg.eig(covariance_matrix)
+
+                # Step 4: Select the Top Two Eigenvectors
+                top_eigenvectors = eigenvectors[:, :2]
+
+                # Step 5: Project the Data onto the Principal Components
+                principal_components = np.dot(mean_centered_data, top_eigenvectors)
+
+                plt.scatter(principal_components[:, 0], principal_components[:, 1], c=labels)
+                plt.xlabel("Principal Component 1")
+                plt.ylabel("Principal Component 2")
+                plt.show()
+
+
+
                 vis_test = reconstructed_sample_visualization.VisualizeReconstructedSamples(data, labels, trainer_module, loader_module, config)
                 original_data, recontructed_data = vis_test.plot_reconstructed_input()
 

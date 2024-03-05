@@ -5,6 +5,8 @@ from typing import Sequence, Union, List, Tuple
 import torch
 import torch.nn as nn
 import torch.distributions as td
+from torchsummary import summary
+
 
 from networks.blocks import (
     Conv1dBlock,
@@ -331,6 +333,14 @@ class Conv2dVariationalAutoencoder(nn.Module):
             stride_per_layer=stride_per_layer,
             use_batch_norm=use_batch_norm,
         )
+
+        # PRINT MODEL ARCHITECTURE:
+        print('\n\nENCODER ARCHITECTURE')
+        summary(self.encoder, input_shape)
+
+        '''print('\n\nDECODER ARCHITECTURE')
+        summary(self.decoder, output_shape)'''
+
 
     def encode(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """Return a posterior mean and variance for a given input"""
