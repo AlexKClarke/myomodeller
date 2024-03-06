@@ -52,6 +52,7 @@ class MLPVariationalAutoencoder(nn.Module):
         super().__init__()
 
         self.output_shape = output_shape
+        self.latent_dim = latent_dim
 
         if fix_recon_var:
             self.recon_log_var = torch.zeros(output_shape)
@@ -80,10 +81,17 @@ class MLPVariationalAutoencoder(nn.Module):
         # Extract mean and log variance
         params = self.encoder(x)
 
-        z_mean, z_log_cov_1, z_log_cov_2 = params.split(params.shape[-1] // 3, dim=-1)
-        z_log_cov = torch.cat((z_log_cov_1, z_log_cov_2), dim=-1)
+        z_mean = params[0, :self.latent_dim].unsqueeze(0)
+        z_log_cov = params[0, self.latent_dim:].unsqueeze(0)
 
         z_log_cov = z_log_cov.reshape(z_log_cov.shape[0], int(z_log_cov.shape[1] / 2), int(z_log_cov.shape[1] / 2))
+
+        #TODO does this make sense?
+        # Extracts triangular components
+        lower_triangular = torch.tril(z_log_cov.squeeze())
+        upper_triangular = torch.tril(z_log_cov.squeeze(), diagonal=-1)
+        # Create a new symmetric matrix by adding triangular parts
+        z_log_cov = lower_triangular + upper_triangular.t()
 
         return z_mean, z_log_cov.exp()
 
@@ -137,8 +145,9 @@ class MLPVariationalAutoencoder(nn.Module):
     ) -> torch.Tensor:
 
         #TODO: Either methods don't work to ensure positive-definitness
-        z_var = z_var @ z_var.transpose(-1, -2) # ensure covariance matrix is positive definite
-        z_var = self.ensure_positive_definite(z_var)
+        '''z_var = z_var @ z_var.transpose(-1, -2) # ensure covariance matrix is positive definite
+        z_var = self.ensure_positive_definite(z_var)'''
+
         z = td.MultivariateNormal(z_mean, z_var).rsample((num_draws,)).transpose(0, 1)
         return z.squeeze(1) if z.shape[1] == 1 else z
 
