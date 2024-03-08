@@ -148,7 +148,11 @@ class MLPVariationalAutoencoder(nn.Module):
         '''z_var = z_var @ z_var.transpose(-1, -2) # ensure covariance matrix is positive definite
         z_var = self.ensure_positive_definite(z_var)'''
 
-        z = td.MultivariateNormal(z_mean, z_var).rsample((num_draws,)).transpose(0, 1)
+        if self.multivariate_normal:
+            z = td.MultivariateNormal(z_mean, z_var).rsample((num_draws,)).transpose(0, 1)
+        else:
+            z = td.Normal(z_mean, z_var).rsample((num_draws,)).transpose(0, 1)
+
         return z.squeeze(1) if z.shape[1] == 1 else z
 
 
