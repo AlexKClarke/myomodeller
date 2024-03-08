@@ -26,6 +26,7 @@ class MLPVariationalAutoencoder(nn.Module):
         out_chans_per_layer: List[int],
         use_batch_norm: bool = True,
         fix_recon_var: bool = False,
+        multivariate_posterior: bool = False
     ):
         """An MLP-based sparse autoencoder
 
@@ -53,17 +54,23 @@ class MLPVariationalAutoencoder(nn.Module):
 
         self.output_shape = output_shape
         self.latent_dim = latent_dim
+        self.multivariate_posterior = multivariate_posterior
 
         if fix_recon_var:
             self.recon_log_var = torch.zeros(output_shape)
         else:
             self.recon_log_var = nn.Parameter(torch.zeros(output_shape))
 
+        if self.multivariate_posterior:
+            encoder_output = [latent_dim + latent_dim * latent_dim]
+        else:
+            encoder_output = [2 * latent_dim]
+
         out_chans_per_layer = [c for c in out_chans_per_layer if c]
 
         self.encoder = MLPBlock(
             input_shape=input_shape,
-            output_shape=[latent_dim + latent_dim * latent_dim], # changed to account for multivariate mean and variance
+            output_shape=encoder_output, # changed to account for multivariate mean and variance
             out_chans_per_layer=out_chans_per_layer,
             use_batch_norm=use_batch_norm,
         )
@@ -84,16 +91,25 @@ class MLPVariationalAutoencoder(nn.Module):
         z_mean = params[0, :self.latent_dim].unsqueeze(0)
         z_log_cov = params[0, self.latent_dim:].unsqueeze(0)
 
-        z_log_cov = z_log_cov.reshape(z_log_cov.shape[0], int(z_log_cov.shape[1] / 2), int(z_log_cov.shape[1] / 2))
+        if self.multivariate_posterior:
+            z_log_cov = z_log_cov.reshape(z_log_cov.shape[0], int(z_log_cov.shape[1] / 2), int(z_log_cov.shape[1] / 2))
 
-        #TODO does this make sense?
-        # Extracts triangular components
-        lower_triangular = torch.tril(z_log_cov.squeeze())
-        upper_triangular = torch.tril(z_log_cov.squeeze(), diagonal=-1)
-        # Create a new symmetric matrix by adding triangular parts
-        z_log_cov = lower_triangular + upper_triangular.t()
+            # Extracts triangular components
+            lower_triangular = torch.tril(z_log_cov.squeeze())
+            upper_triangular = torch.tril(z_log_cov.squeeze(), diagonal=-1)
+            # Create a new symmetric matrix by adding triangular parts
+            z_log_cov = lower_triangular + upper_triangular.t()
 
-        return z_mean, z_log_cov.exp()
+            z_log_cov = z_log_cov.unsqueeze(0)
+
+
+        z_var = z_log_cov.exp()
+
+        #TODO: Either methods don't work to ensure positive-definitness
+        if self.multivariate_posterior:
+            z_var = self.ensure_positive_definite(z_var.squeeze())
+
+        return z_mean, z_var
 
     def decode(self, z: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """Return a reconstruction mean and variance for a given input
@@ -126,13 +142,23 @@ class MLPVariationalAutoencoder(nn.Module):
 
         return recon_mean, recon_var
 
-    def ensure_positive_definite(self, covariance_matrix_tensor):
-        # Ensure the covariance matrix is positive definite using Cholesky decomposition
-        covariance_matrix_tensor = torch.matmul(covariance_matrix_tensor, covariance_matrix_tensor.transpose(-1, -2))
-        cholesky_factor = torch.linalg.cholesky(covariance_matrix_tensor)
-        covariance_matrix_tensor = torch.matmul(cholesky_factor, cholesky_factor.transpose(-1, -2))
+    def ensure_positive_definite(self, cov_matrix):
+        try:
+            # Attempt Cholesky decomposition
+            chol_matrix = torch.linalg.cholesky(cov_matrix)
+            return chol_matrix @ chol_matrix.t()  # Reconstruct the positive definite matrix
+        except torch.linalg.LinAlgError:
+            print("Add perturbation")
 
-        return covariance_matrix_tensor
+            #TODO: could it be that the device error happens due to the torch.linalg.LinAlgError not being supported by gpu?
+            if torch.backends.mps.is_available():
+                device = torch.device("mps")
+            else:
+                device = torch.device("cpu")
+            # If Cholesky decomposition fails, add a small diagonal perturbation
+            perturbation = torch.eye(len(cov_matrix), device=device) * 1e-6
+            positive_definite_matrix = cov_matrix + perturbation
+            return self.ensure_positive_definite(positive_definite_matrix)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Reconstructs input for testing using mean of posterior and recon"""
@@ -144,14 +170,12 @@ class MLPVariationalAutoencoder(nn.Module):
         self, z_mean: torch.Tensor, z_var: torch.Tensor, num_draws: int = 1
     ) -> torch.Tensor:
 
-        #TODO: Either methods don't work to ensure positive-definitness
-        '''z_var = z_var @ z_var.transpose(-1, -2) # ensure covariance matrix is positive definite
-        z_var = self.ensure_positive_definite(z_var)'''
 
         if self.multivariate_normal:
             z = td.MultivariateNormal(z_mean, z_var).rsample((num_draws,)).transpose(0, 1)
         else:
             z = td.Normal(z_mean, z_var).rsample((num_draws,)).transpose(0, 1)
+
 
         return z.squeeze(1) if z.shape[1] == 1 else z
 
@@ -167,6 +191,8 @@ class Conv1dVariationalAutoencoder(nn.Module):
         stride_per_layer: Union[int, List[int]] = 1,
         use_batch_norm: bool = True,
         fix_recon_var: bool = False,
+        multivariate_posterior: bool = False
+
     ):
         """A Conv1d-based sparse autoencoder
 
@@ -206,11 +232,16 @@ class Conv1dVariationalAutoencoder(nn.Module):
         else:
             self.recon_log_var = nn.Parameter(torch.zeros(output_shape))
 
+        if self.multivariate_posterior:
+            encoder_output = [latent_dim + latent_dim * latent_dim]
+        else:
+            encoder_output = [2 * latent_dim]
+
         out_chans_per_layer = [c for c in out_chans_per_layer if c]
 
         self.encoder = Conv1dBlock(
             input_shape=input_shape,
-            output_shape=[latent_dim * 2],
+            output_shape=encoder_output,
             out_chans_per_layer=out_chans_per_layer,
             kernel_size_per_layer=kernel_size_per_layer,
             stride_per_layer=stride_per_layer,
@@ -238,8 +269,28 @@ class Conv1dVariationalAutoencoder(nn.Module):
         """Return a posterior mean and variance for a given input"""
 
         params = self.encoder(x)
-        z_mean, z_log_cov = params.split(params.shape[-1] // 2, dim=-1)
-        return z_mean, z_log_cov.exp()
+        z_mean = params[0, :self.latent_dim].unsqueeze(0)
+        z_log_cov = params[0, self.latent_dim:].unsqueeze(0)
+
+        if self.multivariate_posterior:
+            z_log_cov = z_log_cov.reshape(z_log_cov.shape[0], int(z_log_cov.shape[1] / 2), int(z_log_cov.shape[1] / 2))
+
+            # Extracts triangular components
+            lower_triangular = torch.tril(z_log_cov.squeeze())
+            upper_triangular = torch.tril(z_log_cov.squeeze(), diagonal=-1)
+            # Create a new symmetric matrix by adding triangular parts
+            z_log_cov = lower_triangular + upper_triangular.t()
+
+            z_log_cov = z_log_cov.unsqueeze(0)
+
+        z_var = z_log_cov.exp()
+
+        # TODO: Either methods don't work to ensure positive-definitness
+        if self.multivariate_posterior:
+            z_var = self.ensure_positive_definite(z_var.squeeze())
+
+
+        return z_mean, z_log_cov
 
     def decode(self, z: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """Return a reconstruction mean and variance for a given input
@@ -281,7 +332,10 @@ class Conv1dVariationalAutoencoder(nn.Module):
     def sample_posterior(
         self, z_mean: torch.Tensor, z_var: torch.Tensor, num_draws: int = 1
     ) -> torch.Tensor:
-        z = td.Normal(z_mean, z_var).rsample((num_draws,)).transpose(0, 1)
+        if self.multivariate_normal:
+            z = td.MultivariateNormal(z_mean, z_var).rsample((num_draws,)).transpose(0, 1)
+        else:
+            z = td.Normal(z_mean, z_var).rsample((num_draws,)).transpose(0, 1)
         return z.squeeze(1) if z.shape[1] == 1 else z
 
 
@@ -296,6 +350,7 @@ class Conv2dVariationalAutoencoder(nn.Module):
         stride_per_layer: Union[int, List[Tuple[int, int]]] = 1,
         use_batch_norm: bool = True,
         fix_recon_var: bool = False,
+        multivariate_posterior: bool = False
     ):
         """A Conv2d-based sparse autoencoder
 
@@ -335,11 +390,17 @@ class Conv2dVariationalAutoencoder(nn.Module):
         else:
             self.recon_log_var = nn.Parameter(torch.zeros(output_shape))
 
+        if self.multivariate_posterior:
+            encoder_output = [latent_dim + latent_dim * latent_dim]
+        else:
+            encoder_output = [2 * latent_dim]
+
+
         out_chans_per_layer = [c for c in out_chans_per_layer if c]
 
         self.encoder = Conv2dBlock(
             input_shape=input_shape,
-            output_shape=[latent_dim * 2],
+            output_shape=encoder_output,
             out_chans_per_layer=out_chans_per_layer,
             kernel_size_per_layer=kernel_size_per_layer,
             stride_per_layer=stride_per_layer,
@@ -367,8 +428,27 @@ class Conv2dVariationalAutoencoder(nn.Module):
         """Return a posterior mean and variance for a given input"""
 
         params = self.encoder(x)
-        z_mean, z_log_cov = params.split(params.shape[-1] // 2, dim=-1)
-        return z_mean, z_log_cov.exp()
+        z_mean = params[0, :self.latent_dim].unsqueeze(0)
+        z_log_cov = params[0, self.latent_dim:].unsqueeze(0)
+
+        if self.multivariate_posterior:
+            z_log_cov = z_log_cov.reshape(z_log_cov.shape[0], int(z_log_cov.shape[1] / 2), int(z_log_cov.shape[1] / 2))
+
+            # Extracts triangular components
+            lower_triangular = torch.tril(z_log_cov.squeeze())
+            upper_triangular = torch.tril(z_log_cov.squeeze(), diagonal=-1)
+            # Create a new symmetric matrix by adding triangular parts
+            z_log_cov = lower_triangular + upper_triangular.t()
+
+            z_log_cov = z_log_cov.unsqueeze(0)
+
+        z_var = z_log_cov.exp()
+
+        # TODO: Either methods don't work to ensure positive-definitness
+        if self.multivariate_posterior:
+            z_var = self.ensure_positive_definite(z_var.squeeze())
+
+        return z_mean, z_log_cov
 
     def decode(self, z: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """Return a reconstruction mean and variance for a given input
@@ -410,5 +490,9 @@ class Conv2dVariationalAutoencoder(nn.Module):
     def sample_posterior(
         self, z_mean: torch.Tensor, z_var: torch.Tensor, num_draws: int = 1
     ) -> torch.Tensor:
-        z = td.Normal(z_mean, z_var).rsample((num_draws,)).transpose(0, 1)
+        if self.multivariate_normal:
+            z = td.MultivariateNormal(z_mean, z_var).rsample((num_draws,)).transpose(0, 1)
+        else:
+            z = td.Normal(z_mean, z_var).rsample((num_draws,)).transpose(0, 1)
+
         return z.squeeze(1) if z.shape[1] == 1 else z

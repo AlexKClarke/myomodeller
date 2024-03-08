@@ -65,7 +65,7 @@ class BurdaVariationalAutoencoder(UpdateModule):
 
         # Create distributions
         #posterior_dist = td.MultivariateNormal(z_mean, z_var.diag_embed())
-        z_var = z_var @ z_var.transpose(-1, -2)  # ensure covariance matrix is positive definite #todo: ok to do this?
+        #z_var = z_var @ z_var.transpose(-1, -2)  # ensure covariance matrix is positive definite #todo: ok to do this?
         posterior_dist = td.MultivariateNormal(z_mean, z_var) # z_var is now the covariance matrix already, no need to use diag_embed()
 
         zero_mean = torch.zeros_like(z_mean)
