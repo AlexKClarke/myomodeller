@@ -339,6 +339,23 @@ class Conv1dVariationalAutoencoder(nn.Module):
             z = td.Normal(z_mean, z_var).rsample((num_draws,)).transpose(0, 1)
         return z.squeeze(1) if z.shape[1] == 1 else z
 
+    def ensure_positive_definite(self, cov_matrix):
+        try:
+            # Attempt Cholesky decomposition
+            chol_matrix = torch.linalg.cholesky(cov_matrix)
+            return chol_matrix @ chol_matrix.t()  # Reconstruct the positive definite matrix
+        except torch.linalg.LinAlgError:
+            print("Add perturbation")
+
+            #TODO: could it be that the device error happens due to the torch.linalg.LinAlgError not being supported by gpu?
+            if torch.backends.mps.is_available():
+                device = torch.device("mps")
+            else:
+                device = torch.device("cpu")
+            # If Cholesky decomposition fails, add a small diagonal perturbation
+            perturbation = torch.eye(len(cov_matrix), device=device) * 1e-6
+            positive_definite_matrix = cov_matrix + perturbation
+            return self.ensure_positive_definite(positive_definite_matrix)
 
 class Conv2dVariationalAutoencoder(nn.Module):
     def __init__(
@@ -498,3 +515,21 @@ class Conv2dVariationalAutoencoder(nn.Module):
             z = td.Normal(z_mean, z_var).rsample((num_draws,)).transpose(0, 1)
 
         return z.squeeze(1) if z.shape[1] == 1 else z
+
+    def ensure_positive_definite(self, cov_matrix):
+        try:
+            # Attempt Cholesky decomposition
+            chol_matrix = torch.linalg.cholesky(cov_matrix)
+            return chol_matrix @ chol_matrix.t()  # Reconstruct the positive definite matrix
+        except torch.linalg.LinAlgError:
+            print("Add perturbation")
+
+            #TODO: could it be that the device error happens due to the torch.linalg.LinAlgError not being supported by gpu?
+            if torch.backends.mps.is_available():
+                device = torch.device("mps")
+            else:
+                device = torch.device("cpu")
+            # If Cholesky decomposition fails, add a small diagonal perturbation
+            perturbation = torch.eye(len(cov_matrix), device=device) * 1e-6
+            positive_definite_matrix = cov_matrix + perturbation
+            return self.ensure_positive_definite(positive_definite_matrix)
