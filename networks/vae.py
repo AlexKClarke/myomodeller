@@ -226,6 +226,7 @@ class Conv1dVariationalAutoencoder(nn.Module):
         super().__init__()
 
         self.output_shape = output_shape
+        self.multivariate_posterior = multivariate_posterior
 
         if fix_recon_var:
             self.recon_log_var = torch.zeros(output_shape)
@@ -384,6 +385,7 @@ class Conv2dVariationalAutoencoder(nn.Module):
         super().__init__()
 
         self.output_shape = output_shape
+        self.multivariate_posterior = multivariate_posterior
 
         if fix_recon_var:
             self.recon_log_var = torch.zeros(output_shape)
