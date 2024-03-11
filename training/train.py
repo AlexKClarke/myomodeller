@@ -253,16 +253,27 @@ class TrainingModule:
             # VISUALIZATION
             if config["latents_visualization"] == True:
 
-                dataset = loader_module._get_data()
-                loader_module.test_dataset.tensors[0]
-                data = dataset[4]
-                labels = dataset[5]
+                '''dataset = loader_module._get_data()
+                loader_module.test_dataset.tensors[0]'''
+                data = loader_module.test_images
+                labels = loader_module.test_labels
 
 
                 from visualization_modules import latents_visualization
                 from visualization_modules import reconstructed_sample_visualization
                 vis_test = latents_visualization.VisualizeLatentSpace(data, labels, trainer_module, loader_module, config)
                 mean_list, var_list = vis_test.plot_latent_space()
+
+
+                data = loader_module.train_images
+                labels = loader_module.train_labels
+
+
+                vis_test = latents_visualization.VisualizeLatentSpace(data, labels, trainer_module, loader_module, config)
+                mean_list, var_list = vis_test.plot_latent_space()
+
+
+
 
                 '''vis_test = reconstructed_sample_visualization.VisualizeReconstructedSamples(data, labels, trainer_module, loader_module, config)
                 vis_test.plot_reconstructed_input()'''

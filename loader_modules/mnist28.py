@@ -2,6 +2,7 @@ from sklearn.datasets import load_digits
 import torch.nn.functional as F
 from torch.nn.functional import one_hot
 import numpy as np
+import torch
 
 
 from training import LoaderModule
@@ -26,23 +27,29 @@ class MNIST28(LoaderModule):
         one_hot_labels: bool = False,
         flatten_input: bool = False,
         downsample_pooling_size: tuple = (1, 1),
+        train_images: torch.int32 = None,
+        train_labels: torch.int32 = None,
+        val_images: torch.int32 = None,
+        val_labels: torch.int32 = None,
+        test_images: torch.int32 = None,
+        test_labels: torch.int32 = None,
     ):
         (
-            train_images,
-            train_labels,
-            val_images,
-            val_labels,
-            test_images,
-            test_labels,
+            self.train_images,
+            self.train_labels,
+            self.val_images,
+            self.val_labels,
+            self.test_images,
+            self.test_labels,
         ) = self._get_data(one_hot_labels, flatten_input, downsample_pooling_size)
 
         super().__init__(
-            train_data=[train_images, train_images if auto else train_labels],
-            val_data=[val_images, val_images if auto else val_labels],
-            test_data=[test_images, test_images if auto else test_labels],
+            train_data=[self.train_images, self.train_images if auto else self.train_labels],
+            val_data=[self.val_images, self.val_images if auto else self.val_labels],
+            test_data=[self.test_images, self.test_images if auto else self.test_labels],
             batch_size=batch_size,
-            input_shape=train_images.shape[1:],
-            output_shape=train_images.shape[1:] if auto else train_labels.shape[1:],
+            input_shape=self.train_images.shape[1:],
+            output_shape=self.train_images.shape[1:] if auto else self.train_labels.shape[1:],
         )
 
     def _get_data(self, one_hot_labels: bool = False, flatten_input: bool = False, downsample_pooling_size: tuple = (1, 1)):
@@ -78,9 +85,9 @@ class MNIST28(LoaderModule):
             [test_images, test_labels],
         ) = [array_to_tensor(data) for data in [train_data, val_data, test_data]]
 
-        train_images = F.max_pool2d(train_images, kernel_size=downsample_pooling_size, stride=downsample_pooling_size).squeeze(1)
-        test_images = F.max_pool2d(test_images, kernel_size=downsample_pooling_size, stride=downsample_pooling_size).squeeze(1)
-        val_images = F.max_pool2d(val_images, kernel_size=downsample_pooling_size, stride=downsample_pooling_size).squeeze(1)
+        train_images = F.max_pool2d(train_images, kernel_size=downsample_pooling_size, stride=downsample_pooling_size)/255
+        test_images = F.max_pool2d(test_images, kernel_size=downsample_pooling_size, stride=downsample_pooling_size)/255
+        val_images = F.max_pool2d(val_images, kernel_size=downsample_pooling_size, stride=downsample_pooling_size)/255
 
         # If flattening is necessary
         if flatten_input:
@@ -95,12 +102,24 @@ class MNIST28(LoaderModule):
                 for label in [train_labels, val_labels, test_labels]
             ]
 
+
+
         # Z-score standardise image sets with statistics from train set
         mean, std = train_images.mean(), train_images.std()
         [train_images, val_images, test_images] = [
             ((images - mean) / std)
             for images in [train_images, val_images, test_images]
         ]
+
+        # Standardise between 0 and 1
+        '''max_value_train = torch.max(train_images)
+        max_value_test = torch.max(test_images)
+        max_value_val = torch.max(val_images)
+
+        train_images = train_images / max_value_train
+        test_images = test_images / max_value_test
+        val_images = val_images / max_value_val'''
+
 
         print('Train size: ', np.shape(train_images)[0])
         print('Test size: ', np.shape(test_images)[0])

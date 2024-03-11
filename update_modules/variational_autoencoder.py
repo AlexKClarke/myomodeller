@@ -20,6 +20,7 @@ class VariationalAutoencoder(UpdateModule):
         starting_beta: float = 0,
         beta_step: float = 1e-2,
         max_beta: float = 1.0,
+        use_BCE_loss: bool = False,
     ):
         super().__init__(
             network,
@@ -34,6 +35,7 @@ class VariationalAutoencoder(UpdateModule):
         self.beta = starting_beta # beta initialised
         self.beta_step = beta_step # added at the end of each epoch
         self.max_beta = max_beta
+        self.use_BCE_loss = use_BCE_loss
 
     def _calculate_elbo_terms(self, x: torch.Tensor):
 
@@ -53,7 +55,7 @@ class VariationalAutoencoder(UpdateModule):
         z_var = torch.where(z_var > 0, z_var, z_var + epsilon)'''
         ######################
 
-        #z_var = torch.clamp(z_var, 1e-36)
+        z_var = torch.clamp(z_var, 1e-36)
 
         z = self.network.sample_posterior(z_mean, z_var)
         recon_mean, recon_var = self.network.decode(z)
@@ -69,7 +71,13 @@ class VariationalAutoencoder(UpdateModule):
         kld_loss = td.kl_divergence(posterior_dist, prior_dist).mean()
 
         # Get the log probability of x given the reconstruction distribution
-        recon_loss = recon_dist.log_prob(x).sum(1).mean() # mean represents the expectation over the samples
+
+        if self.use_BCE_loss:
+            recon_loss = -torch.nn.functional.binary_cross_entropy_with_logits(x, recon_mean)
+        else:
+            recon_loss = recon_dist.log_prob(x).sum(1).mean() # mean represents the expectation over the samples
+
+        recon_loss = -torch.nn.functional.binary_cross_entropy_with_logits(x, recon_mean)
 
         return -recon_loss, kld_loss
 
