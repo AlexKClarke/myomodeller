@@ -15,22 +15,32 @@ class RawEMGLabelled(LoaderModule):
         self,
         file_path: str,
         test_fraction: float = 0.2,
+        val_fraction: float = 0.0,
         group_size: int = 1,
         one_hot_labels: bool = False,
         batch_size: int = 64,
         shuffle_data: bool = True,
         flatten_input: bool = False,
+        # save data as variables
+        train_emg:  torch.int32 = None,
+        train_labels: torch.int32 = None,
+        val_emg:  torch.int32 = None,
+        val_labels: torch.int32 = None,
+        test_emg:  torch.int32 = None,
+        test_labels: torch.int32 = None,
+
     ):
         (
-            train_emg,
-            train_labels,
-            val_emg,
-            val_labels,
-            test_emg,
-            test_labels
+            self.train_emg,
+            self.train_labels,
+            self.val_emg,
+            self.val_labels,
+            self.test_emg,
+            self.test_labels
         ) = self._get_data(
             file_path,
             test_fraction,
+            val_fraction,
             group_size,
             one_hot_labels,
             shuffle_data,
@@ -38,12 +48,12 @@ class RawEMGLabelled(LoaderModule):
         )
 
         super().__init__(
-            train_data=[train_emg, train_labels],
-            val_data=[val_emg, val_labels],
-            test_data=[test_emg, test_labels],
+            train_data=[self.train_emg, self.train_labels],
+            val_data=[self.val_emg, self.val_labels],
+            test_data=[self.test_emg, self.test_labels],
             batch_size=batch_size,
-            input_shape=train_emg.shape[1:],
-            output_shape=train_emg.shape[1:],
+            input_shape=self.train_emg.shape[1:],
+            output_shape=self.train_emg.shape[1:],
         )
 
 
@@ -51,6 +61,7 @@ class RawEMGLabelled(LoaderModule):
         self,
         file_path: str = 'emg_data_folder/gesture_set_1',
         test_fraction: float = 0.2,
+        val_fraction: float = 0.0,
         group_size: int = 1,
         shuffle_data: bool = True,
         one_hot_labels: bool = False,
@@ -73,6 +84,8 @@ class RawEMGLabelled(LoaderModule):
                 labels = np.load(labels_folder, allow_pickle=True)
                 labels = np.array(labels)
                 labels_data.append(labels)
+
+                print(filename.split('_')[1] + ' - ' + str(labels[0]))
 
         # convert to arrays
         '''emg_data = np.array(emg_data)
@@ -103,10 +116,15 @@ class RawEMGLabelled(LoaderModule):
 
         # standardization - this loses information about channels....
         # should compute the variance across the whole emg data instead
-        mean = torch.mean(emg_data, dim=-1, keepdim=True)
+        mean = torch.mean(emg_data, dim=-2, keepdim=True)
         # std = torch.std(emg_data, dim=2, keepdim=True) # this loses information about channels....
         # std = torch.std(emg_data, keepdim=True) # this computes std across all channels, time and trials.. information between channels is preserved, but trials are mixed
-        std = torch.std(emg_data, dim=[-1, -2], keepdim=True)  # this computes std across all channels and time.. information between channels is preserved and trials are not mixed
+        std = torch.std(emg_data, dim=[-1, -2], keepdim=True)
+
+        mean = mean.repeat(1, 1, emg_data.shape[2], 1)
+        std = std.repeat(1, 1, emg_data.shape[2], 1)
+
+        # this computes std across all channels and time.. information between channels is preserved and trials are not mixed
         emg_data = (emg_data - mean) / std
 
 
@@ -120,19 +138,28 @@ class RawEMGLabelled(LoaderModule):
                 group_size=group_size,
             ),
         )
+
         train_data, val_data = split_array_by_indices(
             train_data,
             get_split_indices(
                 num_samples=train_data[0].shape[0],
-                split_fraction=0.2,
+                split_fraction=val_fraction,
                 group_size=group_size,
             ),
         )
+
         (
             [train_emg, train_labels],
             [val_emg, val_labels],
             [test_emg, test_labels],
         ) = [train_data, val_data, test_data]
+
+        if flatten_input:
+            train_emg = train_emg.reshape(train_emg.size()[0], train_emg.size()[1], -1).squeeze()
+            test_emg = test_emg.reshape(test_emg.size()[0], test_emg.size()[1], -1).squeeze()
+            val_emg = val_emg.reshape(val_emg.size()[0], val_emg.size()[1], -1).squeeze()
+
+
 
         # Reduce one hot labels if needed
         #todo: implement one hot labels

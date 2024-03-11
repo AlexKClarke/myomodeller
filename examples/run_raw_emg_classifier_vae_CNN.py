@@ -21,7 +21,7 @@ if __name__ == "__main__":
             "update_module_kwargs": {
                 "optimizer": "AdamW",
                 "optimizer_kwargs": {"lr": 0.01},
-                "beta_step": 2e-2,
+                "beta_step": 2.0e-2,
                 "max_beta": 1.0,
             },
             "maximize_val_target": True,
@@ -29,9 +29,9 @@ if __name__ == "__main__":
                 "network_name": "vae.Conv2dVariationalAutoencoder",
                 "network_kwargs": {
                     "latent_dim": 2,
-                    "kernel_size_per_layer": [(30, 1), (15, 1)], # (time, channels) for each layer
-                    "stride_per_layer": [(5, 1), (5, 1)], # (time, channels)
-                    "out_chans_per_layer": [20, 20],
+                    "kernel_size_per_layer": [(15, 1), (30, 1), (15, 1)],  # (time, channels) for each layer
+                    "stride_per_layer": [(1, 1), (5, 1), (5, 1)],  # (time, channels)
+                    "out_chans_per_layer": [5, 10, 20],
                     "fix_recon_var": False,
                 },
             },
@@ -40,7 +40,8 @@ if __name__ == "__main__":
             "loader_module_name": "RawEMGLabelled",
             "loader_module_kwargs": {
                 "file_path": "emg_data_folder/gesture_set_1",
-                "test_fraction": 0.2,
+                "test_fraction": 0.1, # of whole dataset
+                "val_fraction": 0.03, # of test set
                 "group_size": 1,
                 "batch_size": 32,
                 "one_hot_labels": False,
@@ -51,7 +52,7 @@ if __name__ == "__main__":
         "trainer_kwargs": {
             "accelerator": "gpu",
             "devices": 1,
-            "max_epochs": 50,
+            "max_epochs": 20,
             "log_every_n_steps": 10,
         },
 

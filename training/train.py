@@ -253,11 +253,13 @@ class TrainingModule:
             # VISUALIZATION
             if config["latents_visualization"] == True:
 
-                dataset = loader_module._get_data()
+                '''dataset = loader_module._get_data()
                 loader_module.test_dataset.tensors[0]
                 data = dataset[4]
-                labels = dataset[5]
+                labels = dataset[5]'''
 
+                data = loader_module.test_emg
+                labels = loader_module.test_labels
 
                 from visualization_modules import latents_visualization
                 from visualization_modules import reconstructed_sample_visualization
@@ -291,14 +293,68 @@ class TrainingModule:
                 top_eigenvectors = eigenvectors[:, :2]
 
                 # Step 5: Project the Data onto the Principal Components
-                principal_components = np.dot(mean_centered_data, top_eigenvectors)
+                principal_components_test = np.dot(mean_centered_data, top_eigenvectors)
 
-                plt.scatter(principal_components[:, 0], principal_components[:, 1], c=labels)
+
+
+
+
+                train_data = loader_module.train_emg
+                train_labels = loader_module.train_labels
+
+                latent_mean = vae_model.encode(train_data)[0]
+                latent_mean = latent_mean.detach().numpy()
+                mean_centered_data = latent_mean - np.mean(latent_mean, axis=0)
+                covariance_matrix = np.cov(mean_centered_data, rowvar=False)
+                eigenvalues, eigenvectors = np.linalg.eig(covariance_matrix)
+                top_eigenvectors = eigenvectors[:, :2]
+                principal_components_train = np.dot(mean_centered_data, top_eigenvectors)
+
+
+
+
+
+                ####################
+
+                Classes = ['Rest', 'Hand Close', 'Flexion', 'Extension']
+
+                plt.figure(figsize=(10, 4))
+
+                # Plot for test data
+                plt.subplot(1, 2, 1)
+                plt.title('Test data')
+
+                # Scatter plot for each class
+                for i in range(4):
+                    indices = labels == i
+                    plt.scatter(principal_components_test[indices, 0], principal_components_test[indices, 1],
+                                label=f'{Classes[i]}')
+
                 plt.xlabel("Principal Component 1")
                 plt.ylabel("Principal Component 2")
+                plt.legend()
+
+                # Plot for train data (assuming similar structure)
+                plt.subplot(1, 2, 2)
+                plt.title('Train data')
+
+                # Scatter plot for each class
+                for i in range(4):
+                    indices = train_labels == i
+                    plt.scatter(principal_components_train[indices, 0], principal_components_train[indices, 1],
+                                label=f'{Classes[i]}')
+
+                plt.xlabel("Principal Component 1")
+                plt.ylabel("Principal Component 2")
+                plt.legend()
+
+                # Adjust layout for better visualization
+                plt.tight_layout()
+
+                # Show the plots
                 plt.show()
 
-
+                #####################
 
                 vis_test = reconstructed_sample_visualization.VisualizeReconstructedSamples(data, labels, trainer_module, loader_module, config)
                 original_data, recontructed_data = vis_test.plot_reconstructed_input()
