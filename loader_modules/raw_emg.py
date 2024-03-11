@@ -114,11 +114,15 @@ class RawEMGLabelled(LoaderModule):
             emg_data = emg_data[indices]
             labels_data = labels_data[indices]
 
-        # standardization - this loses information about channels....
-        # should compute the variance across the whole emg data instead
+
+
+
+        # standardise between 0 and 1
+        max_emg = torch.max(emg_data)
+        emg_data = emg_data/max_emg
+
+        # remove mean and divide by std
         mean = torch.mean(emg_data, dim=-2, keepdim=True)
-        # std = torch.std(emg_data, dim=2, keepdim=True) # this loses information about channels....
-        # std = torch.std(emg_data, keepdim=True) # this computes std across all channels, time and trials.. information between channels is preserved, but trials are mixed
         std = torch.std(emg_data, dim=[-1, -2], keepdim=True)
 
         mean = mean.repeat(1, 1, emg_data.shape[2], 1)
