@@ -77,8 +77,6 @@ class VariationalAutoencoder(UpdateModule):
         else:
             recon_loss = recon_dist.log_prob(x).sum(1).mean() # mean represents the expectation over the samples
 
-        recon_loss = -torch.nn.functional.binary_cross_entropy_with_logits(x, recon_mean)
-
         return -recon_loss, kld_loss
 
     def _calculate_recon_r2(self, x: torch.Tensor):

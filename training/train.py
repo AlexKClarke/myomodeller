@@ -258,6 +258,10 @@ class TrainingModule:
                 data = loader_module.test_images
                 labels = loader_module.test_labels
 
+                from visualization_modules import conv_filters_visualization
+                filters_viz = conv_filters_visualization.VisualizeConvFilters(trainer_module, config, 0)
+                filters_viz.plot_conv_filters()
+
 
                 from visualization_modules import latents_visualization
                 from visualization_modules import reconstructed_sample_visualization

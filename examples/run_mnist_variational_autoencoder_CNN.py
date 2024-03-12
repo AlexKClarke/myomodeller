@@ -31,7 +31,7 @@ if __name__ == "__main__":
                 "network_name": "vae.Conv2dVariationalAutoencoder",
                 "network_kwargs": {
                     "latent_dim": 2,
-                    "kernel_size_per_layer": 2,
+                    "kernel_size_per_layer": 3,
                     "stride_per_layer": 1,
                     "out_chans_per_layer": [16, 16], # filters
                     "fix_recon_var": False,
@@ -49,7 +49,7 @@ if __name__ == "__main__":
         "trainer_kwargs": {
             "accelerator": "gpu",
             "devices": 1,
-            "max_epochs": 100,
+            "max_epochs": 30,
             "log_every_n_steps": 10,
         },
 
