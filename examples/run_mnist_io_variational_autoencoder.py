@@ -41,10 +41,12 @@ if __name__ == "__main__":
                 "network_kwargs": {
 
                     0: {
-                        "network_name": "vae.MLPVariationalAutoencoder",
+                        "network_name": "vae.Conv2dVariationalAutoencoder",
                         "network_kwargs": {
                             "latent_dim": 2,
-                            "out_chans_per_layer": [256, 128],
+                            "kernel_size_per_layer": 3,
+                            "stride_per_layer": 1,
+                            "out_chans_per_layer": [16, 16],
                             "fix_recon_var": False,
                         },
                     },
@@ -54,7 +56,7 @@ if __name__ == "__main__":
                         "network_kwargs": {
                             "input_shape": [2],
                             "output_shape": [1],
-                            "out_chans_per_layer": [64, 32],
+                            "out_chans_per_layer": [8, 8],
                             "output_activation": "Sigmoid",
                         },
                     },
@@ -66,7 +68,7 @@ if __name__ == "__main__":
             "loader_module_kwargs": {
                 "batch_size": 128,
                 "auto": True,
-                "flatten_input": True,
+                "flatten_input": False,
                 "full_dataset": True,
             },
         },
@@ -76,7 +78,7 @@ if __name__ == "__main__":
         "trainer_kwargs": {
             "accelerator": "gpu",
             "devices": 1,
-            "max_epochs": 50,
+            "max_epochs": 5,
             "log_every_n_steps": 1,
         },
 
