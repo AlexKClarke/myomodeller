@@ -26,12 +26,13 @@ if __name__ == "__main__":
             },
             "maximize_val_target": True,
             "network_config": {
-                "network_name": "vae.Conv2dVariationalAutoencoder",
+                "network_name": "vae.Conv2d_MLP_VariationalAutoencoder",
                 "network_kwargs": {
                     "latent_dim": 2,
-                    "kernel_size_per_layer": [(15, 1), (30, 1), (15, 1)],  # (time, channels) for each layer
-                    "stride_per_layer": [(1, 1), (3, 1), (5, 1)],  # (time, channels)
-                    "out_chans_per_layer": [10, 10, 20],
+                    "kernel_size_per_layer": [(30, 1), (15, 1)],  # (time, channels) for each layer
+                    "stride_per_layer": [(3, 1), (5, 1)],  # (time, channels)
+                    "out_chans_per_layer": [10, 20],
+                    "out_chans_per_layer_MLP": [512, 128],
                     "fix_recon_var": False,
                 },
             },

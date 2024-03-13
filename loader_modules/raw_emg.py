@@ -30,6 +30,10 @@ class RawEMGLabelled(LoaderModule):
         test_labels: torch.int32 = None,
 
     ):
+
+        self.shuffle_data = shuffle_data
+        self.flatten_input = flatten_input
+
         (
             self.train_emg,
             self.train_labels,
@@ -108,7 +112,7 @@ class RawEMGLabelled(LoaderModule):
 
 
         # shuffle data
-        if shuffle_data:
+        if self.shuffle_data:
             num_samples = emg_data.shape[0]
             indices = torch.randperm(num_samples)
             emg_data = emg_data[indices]
@@ -158,7 +162,7 @@ class RawEMGLabelled(LoaderModule):
             [test_emg, test_labels],
         ) = [train_data, val_data, test_data]
 
-        if flatten_input:
+        if self.flatten_input:
             train_emg = train_emg.reshape(train_emg.size()[0], train_emg.size()[1], -1).squeeze()
             test_emg = test_emg.reshape(test_emg.size()[0], test_emg.size()[1], -1).squeeze()
             val_emg = val_emg.reshape(val_emg.size()[0], val_emg.size()[1], -1).squeeze()
