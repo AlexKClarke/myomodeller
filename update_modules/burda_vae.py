@@ -2,7 +2,6 @@ from typing import Dict, Optional
 import torch
 import torch.distributions as td
 
-from training import UpdateModule
 from update_modules import VariationalAutoencoder
 
 
@@ -10,18 +9,18 @@ class BurdaVariationalAutoencoder(VariationalAutoencoder):
     """A module that trains a variational autoencoder using a beta ELBO"""
 
     def __init__(
-            self,
-            network,
-            hpo_mode: bool = False,
-            maximize_val_target: bool = True,
-            optimizer: str = "AdamW",
-            optimizer_kwargs: Optional[Dict] = None,
-            lr_scheduler_kwargs: Optional[Dict] = None,
-            early_stopping_kwargs: Optional[Dict] = None,
-            starting_beta: float = 0.0,
-            beta_step: float = 1e-2,
-            max_beta: float = 1.0,
-            burda_samples: int = 64,
+        self,
+        network,
+        hpo_mode: bool = False,
+        maximize_val_target: bool = True,
+        optimizer: str = "AdamW",
+        optimizer_kwargs: Optional[Dict] = None,
+        lr_scheduler_kwargs: Optional[Dict] = None,
+        early_stopping_kwargs: Optional[Dict] = None,
+        starting_beta: float = 0.0,
+        beta_step: float = 1e-2,
+        max_beta: float = 1.0,
+        burda_samples: int = 64,
     ):
         super().__init__(
             network,
@@ -39,54 +38,58 @@ class BurdaVariationalAutoencoder(VariationalAutoencoder):
         self.burda_samples = burda_samples
 
     def _calculate_burda_likelihood(self, x: torch.Tensor, burda_samples: int):
+
         # Get the posterior and reconstuction parameters
         z_mean, z_var = self.network.encode(x)
+        repeat_shape = [burda_samples] + [1] * (len(z_mean.shape) - 1)
+        z_mean_expanded = z_mean.repeat(repeat_shape)
+        z_var_expanded = z_var.repeat(repeat_shape)
 
-        z_var = z_var.clamp(1e-36)
-
-        # to test nan error
-        '''if z_var.min().item() < 2e-36:
-            print("Low variance")
-            print(z_mean.min().item())
-            pass'''
-
+        # Sample from the posterior a number of times per data sample
         z = self.network.sample_posterior(z_mean, z_var, burda_samples)
 
-        recon_mean, recon_var = self.network.decode(
-            z)  # returns (batch_size, burda_samples, 1, heigth, width) for both mean and variance
-
-        # Expand matrices for the burda reps
-        z_mean = z_mean.unsqueeze(1).repeat(1, burda_samples, 1)
-        z_var = z_var.unsqueeze(1).repeat(1, burda_samples, 1)
-
-        if len(x.size()) == 2:  # if flattened input (for MLP)
-            x = x.unsqueeze(1).repeat(1, burda_samples, 1)
-        else:  # if unflattened input (for CNN)
-            x = x.repeat(1, burda_samples, 1, 1)
+        # Get reconstruction params for each z [batch, posterior_samples, ...]
+        recon_mean, recon_var = self.network.decode(z)
 
         # Create distributions
-        posterior_dist = td.MultivariateNormal(z_mean, z_var.diag_embed())
-        prior_dist = td.MultivariateNormal(torch.zeros_like(z_mean), torch.ones_like(z_var).diag_embed())
-        recon_dist = td.Normal(recon_mean.squeeze(), recon_var.squeeze())
+        posterior_dist = td.MultivariateNormal(
+            z_mean_expanded, z_var_expanded.diag_embed()
+        )
+        prior_dist = td.MultivariateNormal(
+            torch.zeros_like(z_mean_expanded),
+            torch.ones_like(z_var_expanded).diag_embed(),
+        )
+        recon_dist = td.Normal(recon_mean, recon_var)
 
-        # Calculate log probabilities
-        p_hi = prior_dist.log_prob(z)
-        if len(x.size()) == 3:  # if flattened input (for MLP)
-            p_xGhi = recon_dist.log_prob(x).sum(-1)
-        else:  # if unflattened input (for CNN)
-            p_xGhi = recon_dist.log_prob(x).sum((-1, -2))  # Sum along the image dimensions
-        q_hiGx = posterior_dist.log_prob(z)
+        # Find the log probabilities on the latents
+        posterior_log_prob = posterior_dist.log_prob(z.flatten(0, 1)).unflatten(
+            0, [z.shape[0], z.shape[1]]
+        )
+        prior_log_prob = prior_dist.log_prob(z.flatten(0, 1)).unflatten(
+            0, [z.shape[0], z.shape[1]]
+        )
+
+        # Get the log probs of the reconstructions
+        repeat_shape = [1] + [burda_samples] + [1] * (len(x.shape) - 1)
+        sum_dims = list(range(2, 2 + (len(x.shape) - 1)))
+        recon_log_prob = recon_dist.log_prob(x.unsqueeze(1).repeat(repeat_shape)).sum(
+            sum_dims
+        )
 
         # Calculate the ratio
-        ratio = torch.logsumexp(p_xGhi + p_hi - q_hiGx, dim=-1) + torch.log(
-            torch.tensor(1 / burda_samples))  # addition to compute the mean (log of product rule)
-        loss = ratio.mean()
+        ratio = (
+            torch.logsumexp(recon_log_prob + prior_log_prob - posterior_log_prob, -1)
+            + (torch.ones(1).type_as(x) / burda_samples).log()
+        )
+        loss = -ratio.mean()
 
         return loss
 
     def training_step(self, batch, batch_idx):
-        # recon_loss, kld_loss = self._calculate_elbo_terms(batch[0])
-        loss = self._calculate_burda_likelihood(batch[0], burda_samples=self.burda_samples)
+
+        loss = self._calculate_burda_likelihood(
+            batch[0], burda_samples=self.burda_samples
+        )
 
         self.training_step_outputs.append(
             {

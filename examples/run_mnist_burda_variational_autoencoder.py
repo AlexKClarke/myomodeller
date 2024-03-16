@@ -27,7 +27,6 @@ if __name__ == "__main__":
             },
             "maximize_val_target": False,
             "network_config": {
-                #"network_name": "vae.Conv2dVariationalAutoencoder",
                 "network_name": "vae.MLPVariationalAutoencoder",
                 "network_kwargs": {
                     "latent_dim": 2,
@@ -44,7 +43,6 @@ if __name__ == "__main__":
                 "flatten_input": True,
             },
         },
-
         "trainer_kwargs": {
             "accelerator": "gpu",
             "devices": 1,
@@ -59,10 +57,3 @@ if __name__ == "__main__":
 
     # Train the model and pass the results to tensorboard
     training_module.train()
-
-    '''"trainer_kwargs": {
-        "accelerator": "gpu",
-        "devices": 1,
-        "max_epochs": 200,
-        "log_every_n_steps": 1,
-    },'''
