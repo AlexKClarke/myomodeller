@@ -30,7 +30,7 @@ class VariationalAutoencoder(UpdateModule):
             early_stopping_kwargs,
         )
 
-        self.beta = 0.5 # beta initialised
+        self.beta = 0.0 # beta initialised
         self.beta_step = beta_step # added at the end of each epoch
         self.max_beta = max_beta
 
@@ -38,6 +38,11 @@ class VariationalAutoencoder(UpdateModule):
 
         # Get the posterior and reconstuction parameters
         z_mean, z_var = self.network.encode(x)
+
+        '''for module in (self.network.encoder.block):
+            if (isinstance(module, torch.nn.Conv2d) or isinstance(module, torch.nn.Linear)):
+                print(module)
+                print(module.weight)'''
 
         #todo: DOES THIS MAKE SENSE?
         # it adds a small epsilon to any element that is not greater than 0
@@ -50,7 +55,8 @@ class VariationalAutoencoder(UpdateModule):
         z_var = torch.where(z_var > 0, z_var, z_var + epsilon)'''
         ######################
 
-        z_var = z_var.clamp(min=1e-36)
+        z_var = z_var.clamp(min=1e-35)
+
 
         z = self.network.sample_posterior(z_mean, z_var)
         recon_mean, recon_var = self.network.decode(z)

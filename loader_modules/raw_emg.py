@@ -21,6 +21,7 @@ class RawEMGLabelled(LoaderModule):
         batch_size: int = 64,
         shuffle_data: bool = True,
         flatten_input: bool = False,
+        rectify_emg: bool = False,
         # save data as variables
         train_emg:  torch.int32 = None,
         train_labels: torch.int32 = None,
@@ -33,6 +34,7 @@ class RawEMGLabelled(LoaderModule):
 
         self.shuffle_data = shuffle_data
         self.flatten_input = flatten_input
+        self.rectify_emg = rectify_emg
 
         (
             self.train_emg,
@@ -49,6 +51,7 @@ class RawEMGLabelled(LoaderModule):
             one_hot_labels,
             shuffle_data,
             flatten_input,
+            rectify_emg,
         )
 
         super().__init__(
@@ -69,14 +72,39 @@ class RawEMGLabelled(LoaderModule):
         group_size: int = 1,
         shuffle_data: bool = True,
         one_hot_labels: bool = False,
-        flatten_input: bool = False
+        flatten_input: bool = False,
+        rectify_emg: bool = False,
     ):
         print('Loading raw-EMG data...')
 
         emg_data = []
         labels_data = []
         # load data
+
+        # CONCATENATE DATA INTO LONGER SEGMENTS
+        """for filename in os.listdir(os.path.join(file_path, 'emg')):
+            if not filename.startswith('.DS_Store'):
+                #emg
+                file_folder = os.path.join(file_path, 'emg', filename)
+                data = np.load(file_folder, allow_pickle=True)
+                data = np.array(data)
+
+                num_expanded_segments = int((len(data) - 12)/4) + 1
+                for i in range(num_expanded_segments):
+                    emg_data.append(np.concatenate(data[i*4:(i*4+12)], axis=-1))
+                #labels
+                labels_folder = os.path.join(file_path, 'labels', 'LABELS_'+filename)
+                labels = np.load(labels_folder, allow_pickle=True)
+                labels = np.array(labels)
+                for i in range(num_expanded_segments):
+                    labels_data.append(labels[0])
+
+        emg_data = np.array(emg_data)
+        labels_data = np.array(labels_data)"""
+
+        # LOAD DATA AS IT WAS SAVED
         for filename in os.listdir(os.path.join(file_path, 'emg')):
+            #if not filename.startswith('.DS_Store') and int(filename.split('_')[-1][0]) == 1:
             if not filename.startswith('.DS_Store'):
                 #emg
                 file_folder = os.path.join(file_path, 'emg', filename)
@@ -91,12 +119,10 @@ class RawEMGLabelled(LoaderModule):
 
                 print(filename.split('_')[1] + ' - ' + str(labels[0]))
 
-        # convert to arrays
-        '''emg_data = np.array(emg_data)
-        labels_data = np.array(labels_data)'''
-
         emg_data = np.concatenate(emg_data, axis=0)
         labels_data = np.concatenate(labels_data)
+
+
         # swap axes
         emg_data = np.swapaxes(emg_data, -1, -2)
         #labels_data = np.swapaxes(labels_data, -1, -2)
@@ -111,6 +137,8 @@ class RawEMGLabelled(LoaderModule):
         # EMG data will be in the shape (num_samples, 1, time, channels)
 
 
+
+
         # shuffle data
         if self.shuffle_data:
             num_samples = emg_data.shape[0]
@@ -122,18 +150,22 @@ class RawEMGLabelled(LoaderModule):
 
 
         # standardise between 0 and 1
-        max_emg = torch.max(emg_data)
-        emg_data = emg_data/max_emg
+        '''max_emg = torch.max(torch.abs(emg_data))
+        emg_data = emg_data/max_emg'''
 
         # remove mean and divide by std
-        mean = torch.mean(emg_data, dim=-2, keepdim=True)
+        '''mean = torch.mean(emg_data, dim=-2, keepdim=True)
         std = torch.std(emg_data, dim=[-1, -2], keepdim=True)
 
-        mean = mean.repeat(1, 1, emg_data.shape[2], 1)
-        std = std.repeat(1, 1, emg_data.shape[2], 1)
+        mean = mean.repeat(1, 1, emg_data.shape[-2], 1)
+        std = std.repeat(1, 1, emg_data.shape[-2], emg_data.shape[-1])
 
         # this computes std across all channels and time.. information between channels is preserved and trials are not mixed
-        emg_data = (emg_data - mean) / std
+        emg_data = (emg_data - mean) / std'''
+
+        #emg_data = (emg_data - mean)
+        '''max_emg = torch.max(torch.abs(emg_data))
+        emg_data = emg_data / max_emg'''
 
 
 
@@ -188,6 +220,11 @@ class RawEMGLabelled(LoaderModule):
         print('Training samples: ', len(train_emg))
         print('Test samples: ', len(test_emg))
         print('Validation samples: ', len(val_emg))
+
+        if rectify_emg:
+            train_emg = torch.abs(train_emg)
+            test_emg = torch.abs(test_emg)
+            val_emg = torch.abs(val_emg)
 
         return (
             train_emg,

@@ -21,7 +21,7 @@ if __name__ == "__main__":
             "update_module_kwargs": {
                 "optimizer": "AdamW",
                 "optimizer_kwargs": {"lr": 0.01},
-                "beta_step": 2.0e-2,
+                "beta_step": 1.0e-2,
                 "max_beta": 1.0,
             },
             "maximize_val_target": True,
@@ -47,6 +47,7 @@ if __name__ == "__main__":
                 "one_hot_labels": False,
                 "shuffle_data": False,
                 "flatten_input": False,
+                "rectify_emg": True,
             },
         },
         "trainer_kwargs": {

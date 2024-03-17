@@ -41,22 +41,25 @@ class VisualizeReconstructedSamples():
             self.data_batch = self.data_batch.flatten()'''
 
         N = original_data.size(0)
-        random_numbers = torch.randint(low=0, high=N, size=(10,))
+        random_numbers = torch.randint(low=0, high=N, size=(2,))
         original_data = original_data[random_numbers].squeeze()
         reconstructed_data = reconstructed_data[random_numbers].squeeze()
 
-        fig, axs = plt.subplots(10, 2, figsize=(10, 20))
+        original_data = torch.transpose(original_data, -1, -2)
+        reconstructed_data = torch.transpose(reconstructed_data, -1, -2)
+
+        fig, axs = plt.subplots(2, 2, figsize=(20, 10))
 
         # Plot images from the first tensor in the first column
-        for i in range(10):
-            axs[i, 0].imshow(original_data[i].detach().numpy(), cmap='gray')  # Assuming grayscale images
-            axs[i, 0].set_title(f'Original image - Sample {i + 1}')
-            axs[i, 0].axis('off')
+        for i in range(2):
+            axs[0, i].imshow(original_data[i].detach().numpy(), cmap='gray')  # Assuming grayscale images
+            axs[0, i].set_title(f'Original image - Sample {i + 1}')
+            axs[0, i].axis('off')
         # Plot images from the second tensor in the second column
-        for i in range(10):
-            axs[i, 1].imshow(reconstructed_data[i].detach().numpy(), cmap='gray')  # Assuming grayscale images
-            axs[i, 1].set_title(f'Reconstructed image - Sample {i + 1}')
-            axs[i, 1].axis('off')
+        for i in range(2):
+            axs[1, i].imshow(reconstructed_data[i].detach().numpy(), cmap='gray')  # Assuming grayscale images
+            axs[1, i].set_title(f'Reconstructed image - Sample {i + 1}')
+            axs[1, i].axis('off')
 
         # Adjust layout to prevent overlapping
         plt.tight_layout()

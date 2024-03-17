@@ -3,6 +3,8 @@
 from typing import Sequence, Union, Optional, List, Type, Tuple, Iterable, cast
 import torch
 import torch.nn as nn
+import torch.nn.init as init
+
 from networks.utils import Reshape
 
 
@@ -296,6 +298,7 @@ class Conv2d_MLP_Block(nn.Module):
         use_batch_norm: bool = True,
         output_activation: Optional[Type[nn.Module]] = None,
         use_output_bias: bool = True,
+        zero_weights: bool = False,
     ):
         """Builds a number of conv2d layers and then flattens with linear layer
         to desired output shape
@@ -327,6 +330,7 @@ class Conv2d_MLP_Block(nn.Module):
         use_output_bias: bool = True
             Whether to use bias on output layer
         """
+
 
         super().__init__()
 
@@ -389,9 +393,17 @@ class Conv2d_MLP_Block(nn.Module):
 
         # MLP LAYERS
         for i in range(len(out_chans_per_layer_MLP)-1):
-            self.block.append(
-                nn.Linear(out_chans_per_layer_MLP[i], out_chans_per_layer_MLP[i+1], bias=use_output_bias)
-            )
+            if i != len(out_chans_per_layer_MLP)-2:
+                self.block.append(
+                    nn.Linear(out_chans_per_layer_MLP[i], out_chans_per_layer_MLP[i + 1])
+                )
+                self.block.append(nn.ReLU())
+                if use_batch_norm:
+                    self.block.append(nn.BatchNorm1d(out_chans_per_layer_MLP[i + 1]))
+            else:
+                self.block.append(
+                    nn.Linear(out_chans_per_layer_MLP[i], out_chans_per_layer_MLP[i+1], bias=use_output_bias)
+                )
 
         self.block.append(Reshape(output_shape)) # reshape into the desired non-flattened output shape
         self.block.append(
@@ -399,6 +411,17 @@ class Conv2d_MLP_Block(nn.Module):
             if output_activation
             else torch.nn.Identity()
         )
+
+        # Initialise weights of linear layers to zero
+        if zero_weights == True:
+            self.apply(self._init_weights)
+
+    def _init_weights(self, module):
+        if isinstance(module, (nn.Linear or nn.Conv2d)):
+            #module.weight.data.normal_(mean=0.0, std=1.0)
+            init.xavier_uniform_(module.weight)
+            if module.bias is not None:
+                module.bias.data.zero_()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         for layer in self.block:

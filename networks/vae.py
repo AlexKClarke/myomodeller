@@ -409,6 +409,7 @@ class Conv2d_MLP_VariationalAutoencoder(nn.Module):
         stride_per_layer: Union[int, List[Tuple[int, int]]] = 1,
         use_batch_norm: bool = True,
         fix_recon_var: bool = False,
+        zero_weights: bool = False,
     ):
         """A Conv2d-based sparse autoencoder
 
@@ -459,6 +460,7 @@ class Conv2d_MLP_VariationalAutoencoder(nn.Module):
             kernel_size_per_layer=kernel_size_per_layer,
             stride_per_layer=stride_per_layer,
             use_batch_norm=use_batch_norm,
+            zero_weights=zero_weights,
         )
 
         linear_out_chan = out_chans_per_layer[-1] # last layer in Conv2D becomes size of first ConvTranspose2D
@@ -480,6 +482,7 @@ class Conv2d_MLP_VariationalAutoencoder(nn.Module):
             kernel_size_per_layer=kernel_size_per_layer,
             stride_per_layer=stride_per_layer,
             use_batch_norm=use_batch_norm,
+            zero_weights=zero_weights,
         )
 
         # PRINT MODEL ARCHITECTURE:

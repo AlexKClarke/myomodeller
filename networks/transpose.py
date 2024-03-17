@@ -2,6 +2,7 @@ from typing import Sequence, Union, List, Tuple, Iterable, cast
 import torch
 import torch.nn as nn
 from networks.utils import Reshape
+import torch.nn.init as init
 
 
 class ConvTranspose1dBlock(nn.Module):
@@ -262,6 +263,7 @@ class ConvTranspose2d_MLP_Block(nn.Module):
         kernel_size_per_layer: Union[int, List[Tuple[int, int]]] = 3,
         stride_per_layer: Union[int, List[Tuple[int, int]]] = 1,
         use_batch_norm: bool = True,
+        zero_weights: bool = False,
     ):
         """Complement class to Conv2d block that reverses its
         operations with transpose layers.
@@ -360,11 +362,13 @@ class ConvTranspose2d_MLP_Block(nn.Module):
 
         # MLP LAYERS
         for i in range(len(out_chans_per_layer_MLP)-1):
+            if use_batch_norm:
+                self.block.append(nn.BatchNorm1d(out_chans_per_layer_MLP[i]))
             self.block.append(
                 nn.Linear(out_chans_per_layer_MLP[i], out_chans_per_layer_MLP[i+1])
             )
+            self.block.append(nn.ReLU())
 
-        self.block.append(nn.ReLU())
         self.block.append(Reshape((linear_out_chan, h_dim[0], w_dim[0])))
 
         in_channel = linear_out_chan
@@ -384,6 +388,17 @@ class ConvTranspose2d_MLP_Block(nn.Module):
             in_channel = out_channel
 
         self.block = self.block[:-1]
+
+        # Initialise weights of linear layers to zero
+        if zero_weights == True:
+            self.apply(self._init_weights)
+
+    def _init_weights(self, module):
+        if isinstance(module, (nn.Linear or nn.ConvTranspose2d)):
+            #module.weight.data.normal_(mean=0.0, std=1.0)
+            init.xavier_uniform_(module.weight)
+            if module.bias is not None:
+                module.bias.data.zero_()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         for layer in self.block:

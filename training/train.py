@@ -316,7 +316,7 @@ class TrainingModule:
 
                 ####################
 
-                Classes = ['Rest', 'Hand Close', 'Flexion', 'Extension']
+                Classes = ['Thumb', 'Index', 'Middle', 'Ring', 'Little']
 
                 plt.figure(figsize=(10, 4))
 
@@ -325,7 +325,7 @@ class TrainingModule:
                 plt.title('Test data')
 
                 # Scatter plot for each class
-                for i in range(4):
+                for i in range(len(Classes)):
                     indices = labels == i
                     plt.scatter(principal_components_test[indices, 0], principal_components_test[indices, 1],
                                 label=f'{Classes[i]}')
@@ -339,7 +339,7 @@ class TrainingModule:
                 plt.title('Train data')
 
                 # Scatter plot for each class
-                for i in range(4):
+                for i in range(len(Classes)):
                     indices = train_labels == i
                     plt.scatter(principal_components_train[indices, 0], principal_components_train[indices, 1],
                                 label=f'{Classes[i]}')
@@ -358,6 +358,33 @@ class TrainingModule:
 
                 vis_test = reconstructed_sample_visualization.VisualizeReconstructedSamples(data, labels, trainer_module, loader_module, config)
                 original_data, recontructed_data = vis_test.plot_reconstructed_input()
+
+                plt.subplot(1, 2, 1)  # 1 row, 2 columns, plot 1
+                for i in range(16):
+                    plt.plot(original_data[0, i, :].detach().numpy() + i*200000)
+                plt.title('Original Data')
+
+                plt.subplot(1, 2, 2)  # 1 row, 2 columns, plot 2
+                for i in range(16):
+                    plt.plot(recontructed_data[0, i, :].detach().numpy() + i*200)
+                plt.title('Reconstructed Data')
+
+                plt.tight_layout()  # Adjust layout to prevent overlapping
+                plt.show()
+
+
+                plt.subplot(1, 2, 1)  # 1 row, 2 columns, plot 1
+                for i in range(16):
+                    plt.plot(original_data[1, i, :].detach().numpy() + i*200000)
+                plt.title('Original Data')
+
+                plt.subplot(1, 2, 2)  # 1 row, 2 columns, plot 2
+                for i in range(16):
+                    plt.plot(recontructed_data[1, i, :].detach().numpy() + i*200)
+                plt.title('Reconstructed Data')
+
+                plt.tight_layout()  # Adjust layout to prevent overlapping
+                plt.show()
 
         # Add latest ckpt path to config
         if test_mode is False:
