@@ -21,18 +21,18 @@ if __name__ == "__main__":
             "update_module_kwargs": {
                 "optimizer": "AdamW",
                 #"optimizer_kwargs": {"lr": 0.01},
-                "beta_step": 2.0e-2,
+                "beta_step": 1.0e-2,
                 "max_beta": 1.0,
             },
             "maximize_val_target": True,
             "network_config": {
                 "network_name": "vae.Conv2d_MLP_VariationalAutoencoder",
                 "network_kwargs": {
-                    "latent_dim": 200,
+                    "latent_dim": 2,
                     "kernel_size_per_layer": [(15, 1), (15, 1), (15, 1)],  # (time, channels) for each layer
-                    "stride_per_layer": [(1, 1), (1, 1), (1, 1), (5, 1)],  # (time, channels)
-                    "out_chans_per_layer": [16, 16, 16],
-                    "out_chans_per_layer_MLP": [1024, 512],
+                    "stride_per_layer": [(1, 1), (7, 1), (15, 1)],  # (time, channels)
+                    "out_chans_per_layer": [16, 32, 64],
+                    "out_chans_per_layer_MLP": [2048, 512],
                     "fix_recon_var": False,
                     "zero_weights": False,
                 },
@@ -45,7 +45,7 @@ if __name__ == "__main__":
                 "test_fraction": 0.1, # of whole dataset
                 "val_fraction": 0.05, # of test set
                 "group_size": 1,
-                "batch_size": 64,
+                "batch_size": 32,
                 "one_hot_labels": False,
                 "shuffle_data": True,
                 "flatten_input": False,
@@ -56,7 +56,7 @@ if __name__ == "__main__":
             "accelerator": "gpu",
             "devices": 1,
             "max_epochs": 30,
-            "log_every_n_steps": 1,
+            "log_every_n_steps": 20,
         },
 
         "latents_visualization": True,
