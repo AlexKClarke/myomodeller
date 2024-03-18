@@ -6,7 +6,8 @@ from update_modules import VariationalAutoencoder
 
 
 class BurdaVariationalAutoencoder(VariationalAutoencoder):
-    """A module that trains a variational autoencoder using a beta ELBO"""
+    """A module that trains a variational autoencoder using a
+    importance weighting"""
 
     def __init__(
         self,
