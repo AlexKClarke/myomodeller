@@ -366,7 +366,7 @@ class TrainingModule:
 
                 plt.subplot(1, 2, 2)  # 1 row, 2 columns, plot 2
                 for i in range(16):
-                    plt.plot(recontructed_data[0, i, :].detach().numpy() + i*200)
+                    plt.plot(recontructed_data[0, i, :].detach().numpy() + i*500)
                 plt.title('Reconstructed Data')
 
                 plt.tight_layout()  # Adjust layout to prevent overlapping
@@ -380,7 +380,7 @@ class TrainingModule:
 
                 plt.subplot(1, 2, 2)  # 1 row, 2 columns, plot 2
                 for i in range(16):
-                    plt.plot(recontructed_data[1, i, :].detach().numpy() + i*200)
+                    plt.plot(recontructed_data[1, i, :].detach().numpy() + i*500)
                 plt.title('Reconstructed Data')
 
                 plt.tight_layout()  # Adjust layout to prevent overlapping
