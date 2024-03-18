@@ -17,7 +17,6 @@ class VariationalAutoencoder(UpdateModule):
         optimizer_kwargs: Optional[Dict] = None,
         lr_scheduler_kwargs: Optional[Dict] = None,
         early_stopping_kwargs: Optional[Dict] = None,
-        # Following are the additional properties
         starting_beta: float = 0.0,
         beta_step: float = 1e-2,
         max_beta: float = 1.0,
@@ -43,10 +42,13 @@ class VariationalAutoencoder(UpdateModule):
         recon_mean, recon_var = self.network.decode(z)
 
         # Create distributions
-        posterior_dist = td.MultivariateNormal(z_mean, z_var.diag_embed())
-        prior_dist = td.MultivariateNormal(
-            torch.zeros_like(z_mean), torch.ones_like(z_var).diag_embed()
+        posterior_dist = td.MultivariateNormal(z_mean, z_var)
+        eye = (
+            torch.eye(z_var.shape[1], dtype=z_var.dtype, device=z_var.device)
+            .unsqueeze(0)
+            .repeat(z_var.shape[0], 1, 1)
         )
+        prior_dist = td.MultivariateNormal(torch.zeros_like(z_mean), eye)
         recon_dist = td.Normal(recon_mean, recon_var)
 
         # Get the KL divergence between posterior and prior

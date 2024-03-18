@@ -32,7 +32,7 @@ if __name__ == "__main__":
                     "latent_dim": 2,
                     "out_chans_per_layer": [32, 32],
                     "fix_recon_var": False,
-                    "multivariate_posterior": True,
+                    "full_covariance": True,
                 },
             },
         },
@@ -50,8 +50,6 @@ if __name__ == "__main__":
             "max_epochs": 200,
             "log_every_n_steps": 1,
         },
-
-
     }
 
     # Once the config is defined it can be passed to an instance of the

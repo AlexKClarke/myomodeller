@@ -46,10 +46,13 @@ class IOVariationalAutoencoder(UpdateModule):
         recon_mean, recon_var = self.network[0].decode(z)
 
         # Create distributions
-        posterior_dist = td.MultivariateNormal(z_mean, z_var.diag_embed())
-        prior_dist = td.MultivariateNormal(
-            torch.zeros_like(z_mean), torch.ones_like(z_var).diag_embed()
+        posterior_dist = td.MultivariateNormal(z_mean, z_var)
+        eye = (
+            torch.eye(z_var.shape[1], dtype=z_var.dtype, device=z_var.device)
+            .unsqueeze(0)
+            .repeat(z_var.shape[0], 1, 1)
         )
+        prior_dist = td.MultivariateNormal(torch.zeros_like(z_mean), eye)
         recon_dist = td.Normal(recon_mean, recon_var)
 
         # Get the KL divergence between posterior and prior
@@ -63,10 +66,14 @@ class IOVariationalAutoencoder(UpdateModule):
     def _calculate_auxiliary_loss(self, x: torch.Tensor):
         with torch.no_grad():
             z_mean, z_var = self.network[0].encode(x)
-            posterior_dist = td.MultivariateNormal(z_mean, z_var.diag_embed())
-            prior_dist = td.MultivariateNormal(
-                torch.zeros_like(z_mean), torch.ones_like(z_var).diag_embed()
+
+            posterior_dist = td.MultivariateNormal(z_mean, z_var)
+            eye = (
+                torch.eye(z_var.shape[1], dtype=z_var.dtype, device=z_var.device)
+                .unsqueeze(0)
+                .repeat(z_var.shape[0], 1, 1)
             )
+            prior_dist = td.MultivariateNormal(torch.zeros_like(z_mean), eye)
 
             post_sample = posterior_dist.sample([self.n_samples_in_aux]).reshape(
                 [-1, z_mean.shape[-1]]
