@@ -17,6 +17,8 @@ class VariationalAutoencoder(UpdateModule):
         optimizer_kwargs: Optional[Dict] = None,
         lr_scheduler_kwargs: Optional[Dict] = None,
         early_stopping_kwargs: Optional[Dict] = None,
+        # Following are the additional properties
+        starting_beta: float = 0.0,
         beta_step: float = 1e-2,
         max_beta: float = 1.0,
     ):
@@ -30,7 +32,7 @@ class VariationalAutoencoder(UpdateModule):
             early_stopping_kwargs,
         )
 
-        self.beta = 0.0
+        self.starting_beta = starting_beta
         self.beta_step = beta_step
         self.max_beta = max_beta
 
@@ -67,22 +69,23 @@ class VariationalAutoencoder(UpdateModule):
 
     def training_step(self, batch, batch_idx):
         recon_loss, kld_loss = self._calculate_elbo_terms(batch[0])
-        elbo = recon_loss + self.beta * kld_loss
+        elbo = recon_loss + self.starting_beta * kld_loss
+
         self.training_step_outputs.append(
             {
                 "training_elbo": elbo,
                 "training_recon": recon_loss,
                 "training_kld": kld_loss,
-                "beta": torch.tensor(self.beta),
+                "beta": torch.tensor(self.starting_beta),
             }
         )
         return elbo
 
     def on_train_epoch_end(self):
-        if self.beta < self.max_beta:
-            self.beta += self.beta_step
+        if self.starting_beta < self.max_beta:
+            self.starting_beta += self.beta_step
         else:
-            self.beta = self.max_beta
+            self.starting_beta = self.max_beta
 
     def validation_step(self, batch, batch_idx):
         r2 = self._calculate_recon_r2(batch[0])

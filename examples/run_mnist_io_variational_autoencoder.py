@@ -29,6 +29,7 @@ if __name__ == "__main__":
                         "optimizer_kwargs": {"lr": 0.001},
                     },
                 },
+                "starting_beta": 0.0,
                 "beta_step": 1e-2,
                 "max_beta": 1.0,
                 "n_steps_per_switch": 5,
