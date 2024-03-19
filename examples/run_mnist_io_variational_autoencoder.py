@@ -45,6 +45,7 @@ if __name__ == "__main__":
                             "latent_dim": 3,
                             "out_chans_per_layer": [32, 32],
                             "fix_recon_var": False,
+                            "full_covariance": True,
                         },
                     },
                     1: {

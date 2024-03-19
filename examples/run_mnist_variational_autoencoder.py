@@ -31,6 +31,7 @@ if __name__ == "__main__":
                     "latent_dim": 3,
                     "out_chans_per_layer": [16, 32],
                     "fix_recon_var": False,
+                    "full_covariance": True,
                 },
             },
         },
@@ -51,9 +52,9 @@ if __name__ == "__main__":
     # Train the model and pass the results to tensorboard
     training_module.train()
 
-    '''"trainer_kwargs": {
+    """"trainer_kwargs": {
         "accelerator": "cpu",
         "devices": 1,
         "max_epochs": 200,
         "log_every_n_steps": 1,
-    },'''
+    },"""

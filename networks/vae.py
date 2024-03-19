@@ -26,6 +26,7 @@ class MLPVariationalAutoencoder(nn.Module):
         out_chans_per_layer: List[int],
         use_batch_norm: bool = True,
         fix_recon_var: bool = False,
+        full_covariance: bool = False,
     ):
         """An MLP-based sparse autoencoder
 
@@ -48,21 +49,29 @@ class MLPVariationalAutoencoder(nn.Module):
             fix_recon_var (bool, optional):
                 Whether to fix reconstruction to a unit variance
                 Defaults to False.
+            full_covariance (bool, optional):
+                Whether to use a fully specified covariance matrix or just the diagonal
         """
         super().__init__()
 
         self.output_shape = output_shape
+        self.latent_dim = latent_dim
 
         if fix_recon_var:
             self.recon_log_var = torch.zeros(output_shape)
         else:
             self.recon_log_var = nn.Parameter(torch.zeros(output_shape))
 
+        if full_covariance:
+            encoder_output = [latent_dim + (latent_dim * (latent_dim + 1)) // 2]
+        else:
+            encoder_output = [2 * latent_dim]
+
         out_chans_per_layer = [c for c in out_chans_per_layer if c]
 
         self.encoder = MLPBlock(
             input_shape=input_shape,
-            output_shape=[latent_dim * 2],
+            output_shape=encoder_output,
             out_chans_per_layer=out_chans_per_layer,
             use_batch_norm=use_batch_norm,
         )
@@ -77,9 +86,30 @@ class MLPVariationalAutoencoder(nn.Module):
     def encode(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """Return a posterior mean and variance for a given input"""
 
+        # Extract mean and log variance
         params = self.encoder(x)
-        z_mean, z_log_cov = params.split(params.shape[-1] // 2, dim=-1)
-        return z_mean, z_log_cov.exp()
+
+        z_mean = params[:, : self.latent_dim]
+        z_log_var = params[:, self.latent_dim :]
+
+        if z_log_var.shape[1] > self.latent_dim:
+
+            lower_tri_indices = torch.tril_indices(*(2 * [self.latent_dim]))
+            L = torch.zeros(
+                z_log_var.shape[0],
+                *(2 * [self.latent_dim]),
+                device=x.device,
+                dtype=x.dtype
+            )
+            L[:, lower_tri_indices[0], lower_tri_indices[1]] = z_log_var.exp()
+            z_var = torch.matmul(L, L.transpose(1, 2)) + 1e-2 * torch.eye(
+                L.shape[1], dtype=L.dtype, device=L.device
+            )
+
+        else:
+            z_var = z_log_var.exp().diag_embed()
+
+        return z_mean, z_var
 
     def decode(self, z: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """Return a reconstruction mean and variance for a given input
@@ -121,7 +151,9 @@ class MLPVariationalAutoencoder(nn.Module):
     def sample_posterior(
         self, z_mean: torch.Tensor, z_var: torch.Tensor, num_draws: int = 1
     ) -> torch.Tensor:
-        z = td.Normal(z_mean, z_var).rsample((num_draws,)).transpose(0, 1)
+
+        z = td.MultivariateNormal(z_mean, z_var).rsample((num_draws,)).transpose(0, 1)
+
         return z.squeeze(1) if z.shape[1] == 1 else z
 
 
@@ -136,6 +168,7 @@ class Conv1dVariationalAutoencoder(nn.Module):
         stride_per_layer: Union[int, List[int]] = 1,
         use_batch_norm: bool = True,
         fix_recon_var: bool = False,
+        full_covariance: bool = False,
     ):
         """A Conv1d-based sparse autoencoder
 
@@ -165,21 +198,29 @@ class Conv1dVariationalAutoencoder(nn.Module):
             fix_recon_var (bool, optional):
                 Whether to fix reconstruction to a unit variance
                 Defaults to False.
+            full_covariance (bool, optional):
+                Whether to use a fully specified covariance matrix or just the diagonal
         """
         super().__init__()
 
         self.output_shape = output_shape
+        self.latent_dim = latent_dim
 
         if fix_recon_var:
             self.recon_log_var = torch.zeros(output_shape)
         else:
             self.recon_log_var = nn.Parameter(torch.zeros(output_shape))
 
+        if full_covariance:
+            encoder_output = [latent_dim + (latent_dim * (latent_dim + 1)) // 2]
+        else:
+            encoder_output = [2 * latent_dim]
+
         out_chans_per_layer = [c for c in out_chans_per_layer if c]
 
         self.encoder = Conv1dBlock(
             input_shape=input_shape,
-            output_shape=[latent_dim * 2],
+            output_shape=encoder_output,
             out_chans_per_layer=out_chans_per_layer,
             kernel_size_per_layer=kernel_size_per_layer,
             stride_per_layer=stride_per_layer,
@@ -206,9 +247,30 @@ class Conv1dVariationalAutoencoder(nn.Module):
     def encode(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """Return a posterior mean and variance for a given input"""
 
+        # Extract mean and log variance
         params = self.encoder(x)
-        z_mean, z_log_cov = params.split(params.shape[-1] // 2, dim=-1)
-        return z_mean, z_log_cov.exp()
+
+        z_mean = params[:, : self.latent_dim]
+        z_log_var = params[:, self.latent_dim :]
+
+        if z_log_var.shape[1] > self.latent_dim:
+
+            lower_tri_indices = torch.tril_indices(*(2 * [self.latent_dim]))
+            L = torch.zeros(
+                z_log_var.shape[0],
+                *(2 * [self.latent_dim]),
+                device=x.device,
+                dtype=x.dtype
+            )
+            L[:, lower_tri_indices[0], lower_tri_indices[1]] = z_log_var.exp()
+            z_var = torch.matmul(L, L.transpose(1, 2)) + 1e-2 * torch.eye(
+                L.shape[1], dtype=L.dtype, device=L.device
+            )
+
+        else:
+            z_var = z_log_var.exp().diag_embed()
+
+        return z_mean, z_var
 
     def decode(self, z: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """Return a reconstruction mean and variance for a given input
@@ -250,7 +312,9 @@ class Conv1dVariationalAutoencoder(nn.Module):
     def sample_posterior(
         self, z_mean: torch.Tensor, z_var: torch.Tensor, num_draws: int = 1
     ) -> torch.Tensor:
-        z = td.Normal(z_mean, z_var).rsample((num_draws,)).transpose(0, 1)
+
+        z = td.MultivariateNormal(z_mean, z_var).rsample((num_draws,)).transpose(0, 1)
+
         return z.squeeze(1) if z.shape[1] == 1 else z
 
 
@@ -265,6 +329,7 @@ class Conv2dVariationalAutoencoder(nn.Module):
         stride_per_layer: Union[int, List[Tuple[int, int]]] = 1,
         use_batch_norm: bool = True,
         fix_recon_var: bool = False,
+        full_covariance: bool = False,
     ):
         """A Conv2d-based sparse autoencoder
 
@@ -294,21 +359,29 @@ class Conv2dVariationalAutoencoder(nn.Module):
             fix_recon_var (bool, optional):
                 Whether to fix reconstruction to a unit variance
                 Defaults to False.
+            full_covariance (bool, optional):
+                Whether to use a fully specified covariance matrix or just the diagonal
         """
         super().__init__()
 
         self.output_shape = output_shape
+        self.latent_dim = latent_dim
 
         if fix_recon_var:
             self.recon_log_var = torch.zeros(output_shape)
         else:
             self.recon_log_var = nn.Parameter(torch.zeros(output_shape))
 
+        if full_covariance:
+            encoder_output = [latent_dim + (latent_dim * (latent_dim + 1)) // 2]
+        else:
+            encoder_output = [2 * latent_dim]
+
         out_chans_per_layer = [c for c in out_chans_per_layer if c]
 
         self.encoder = Conv2dBlock(
             input_shape=input_shape,
-            output_shape=[latent_dim * 2],
+            output_shape=encoder_output,
             out_chans_per_layer=out_chans_per_layer,
             kernel_size_per_layer=kernel_size_per_layer,
             stride_per_layer=stride_per_layer,
@@ -335,9 +408,30 @@ class Conv2dVariationalAutoencoder(nn.Module):
     def encode(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """Return a posterior mean and variance for a given input"""
 
+        # Extract mean and log variance
         params = self.encoder(x)
-        z_mean, z_log_cov = params.split(params.shape[-1] // 2, dim=-1)
-        return z_mean, z_log_cov.exp()
+
+        z_mean = params[:, : self.latent_dim]
+        z_log_var = params[:, self.latent_dim :]
+
+        if z_log_var.shape[1] > self.latent_dim:
+
+            lower_tri_indices = torch.tril_indices(*(2 * [self.latent_dim]))
+            L = torch.zeros(
+                z_log_var.shape[0],
+                *(2 * [self.latent_dim]),
+                device=x.device,
+                dtype=x.dtype
+            )
+            L[:, lower_tri_indices[0], lower_tri_indices[1]] = z_log_var.exp()
+            z_var = torch.matmul(L, L.transpose(1, 2)) + 1e-2 * torch.eye(
+                L.shape[1], dtype=L.dtype, device=L.device
+            )
+
+        else:
+            z_var = z_log_var.exp().diag_embed()
+
+        return z_mean, z_var
 
     def decode(self, z: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """Return a reconstruction mean and variance for a given input
@@ -379,5 +473,7 @@ class Conv2dVariationalAutoencoder(nn.Module):
     def sample_posterior(
         self, z_mean: torch.Tensor, z_var: torch.Tensor, num_draws: int = 1
     ) -> torch.Tensor:
-        z = td.Normal(z_mean, z_var).rsample((num_draws,)).transpose(0, 1)
+
+        z = td.MultivariateNormal(z_mean, z_var).rsample((num_draws,)).transpose(0, 1)
+
         return z.squeeze(1) if z.shape[1] == 1 else z

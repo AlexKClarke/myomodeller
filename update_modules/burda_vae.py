@@ -40,10 +40,11 @@ class BurdaVariationalAutoencoder(VariationalAutoencoder):
 
     def _calculate_burda_likelihood(self, x: torch.Tensor, burda_samples: int):
 
-        # Get the posterior and reconstuction parameters
+        # Get the posterior and reconstruction parameters
         z_mean, z_var = self.network.encode(x)
         repeat_shape = [burda_samples] + [1] * (len(z_mean.shape) - 1)
         z_mean_expanded = z_mean.repeat(repeat_shape)
+        repeat_shape = [burda_samples] + [1] * (len(z_var.shape) - 1)
         z_var_expanded = z_var.repeat(repeat_shape)
 
         # Sample from the posterior a number of times per data sample
@@ -53,13 +54,17 @@ class BurdaVariationalAutoencoder(VariationalAutoencoder):
         recon_mean, recon_var = self.network.decode(z)
 
         # Create distributions
-        posterior_dist = td.MultivariateNormal(
-            z_mean_expanded, z_var_expanded.diag_embed()
+        posterior_dist = td.MultivariateNormal(z_mean_expanded, z_var_expanded)
+        eye = (
+            torch.eye(
+                z_var_expanded.shape[1],
+                dtype=z_var_expanded.dtype,
+                device=z_var_expanded.device,
+            )
+            .unsqueeze(0)
+            .repeat(z_var_expanded.shape[0], 1, 1)
         )
-        prior_dist = td.MultivariateNormal(
-            torch.zeros_like(z_mean_expanded),
-            torch.ones_like(z_var_expanded).diag_embed(),
-        )
+        prior_dist = td.MultivariateNormal(torch.zeros_like(z_mean_expanded), eye)
         recon_dist = td.Normal(recon_mean, recon_var)
 
         # Find the log probabilities on the latents
