@@ -22,15 +22,15 @@ if __name__ == "__main__":
                 "optimizer": "AdamW",
                 #"optimizer_kwargs": {"lr": 0.01},
                 "beta_step": 1.0e-2,
-                "max_beta": 1.0,
+                "max_beta": 5.0,
             },
             "maximize_val_target": True,
             "network_config": {
                 "network_name": "vae.Conv2d_MLP_VariationalAutoencoder",
                 "network_kwargs": {
                     "latent_dim": 2,
-                    "kernel_size_per_layer": [(15, 1), (15, 1), (15, 1)],  # (time, channels) for each layer
-                    "stride_per_layer": [(1, 1), (7, 1), (15, 1)],  # (time, channels)
+                    "kernel_size_per_layer": [(15, 1), (25, 1), (30, 1)],  # (time, channels) for each layer
+                    "stride_per_layer": [(1, 1), (5, 1), (10, 1)],  # (time, channels)
                     "out_chans_per_layer": [16, 32, 64],
                     "out_chans_per_layer_MLP": [2048, 512],
                     "fix_recon_var": False,
@@ -55,8 +55,8 @@ if __name__ == "__main__":
         "trainer_kwargs": {
             "accelerator": "gpu",
             "devices": 1,
-            "max_epochs": 30,
-            "log_every_n_steps": 20,
+            "max_epochs": 500,
+            "log_every_n_steps": 500,
         },
 
         "latents_visualization": True,

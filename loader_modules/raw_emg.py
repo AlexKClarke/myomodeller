@@ -83,7 +83,7 @@ class RawEMGLabelled(LoaderModule):
 
         # CONCATENATE DATA INTO LONGER SEGMENTS
         ########################
-        for filename in os.listdir(os.path.join(file_path, 'emg')):
+        '''for filename in os.listdir(os.path.join(file_path, 'emg')):
             if not filename.startswith('.DS_Store'):
                 #emg
                 file_folder = os.path.join(file_path, 'emg', filename)
@@ -101,14 +101,14 @@ class RawEMGLabelled(LoaderModule):
                     labels_data.append(labels[0])
 
         emg_data = np.array(emg_data)
-        labels_data = np.array(labels_data)
+        labels_data = np.array(labels_data)'''
         ########################
 
 
 
         # LOAD DATA AS IT WAS SAVED
         ########################
-        '''for filename in os.listdir(os.path.join(file_path, 'emg')):
+        for filename in os.listdir(os.path.join(file_path, 'emg')):
             #if not filename.startswith('.DS_Store') and int(filename.split('_')[-1][0]) == 1:
             if not filename.startswith('.DS_Store'):
                 #emg
@@ -125,7 +125,7 @@ class RawEMGLabelled(LoaderModule):
                 print(filename.split('_')[1] + ' - ' + str(labels[0]))
 
         emg_data = np.concatenate(emg_data, axis=0)
-        labels_data = np.concatenate(labels_data)'''
+        labels_data = np.concatenate(labels_data)
         ########################
 
 
