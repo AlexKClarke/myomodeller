@@ -46,13 +46,6 @@ class VisualizeLatentSpace:
         plt.xlabel('Latent 1')
         plt.ylabel('Latent 2')
 
-        # Variance scatter plot
-        '''plt.subplot(1, 2, 2)  # 1 row, 2 columns, second subplot
-        scatter2 = plt.scatter(var_list.detach().numpy()[:, 0], var_list.detach().numpy()[:, 1], c=self.labels_batch, cmap='viridis')  # change colour for each latent
-        plt.title('Variance Plot')
-        plt.xlabel('Latent 1')
-        plt.ylabel('Latent 2')'''
-
         # Adjust layout for better spacing
         plt.tight_layout()
 
