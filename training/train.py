@@ -316,7 +316,11 @@ class TrainingModule:
             self.config["ckpt_path"] is not None
         ), "Path to checkpoint file (ckpt_path) not specified."
 
-        checkpoint = torch.load(self.config["ckpt_path"])
+        if torch.backends.mps.is_available():
+            checkpoint = torch.load(self.config["ckpt_path"], map_location="mps")
+        else:
+            checkpoint = torch.load(self.config["ckpt_path"])
+
         update_module.load_state_dict(checkpoint["state_dict"])
 
         return update_module
