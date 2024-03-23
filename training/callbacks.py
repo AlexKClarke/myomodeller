@@ -12,7 +12,7 @@ class TrainingEpochEnd(Callback):
                 else:
                     results[k].append(v)
 
-        [module.log(k, torch.stack(v).mean()) for k, v in results.items()]
+        [module.log(k, torch.stack(v).float().mean()) for k, v in results.items()]
         module.training_step_outputs.clear()
 
 

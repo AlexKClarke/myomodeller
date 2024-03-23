@@ -27,16 +27,16 @@ if __name__ == "__main__":
             "network_config": {
                 "network_name": "vae.Conv2dVariationalAutoencoder",
                 "network_kwargs": {
-                    "latent_dim": 4,
+                    "latent_dim": 2,
                     "kernel_size_per_layer": 2,
-                    "stride_per_layer": 2,
+                    "stride_per_layer": 1,
                     "out_chans_per_layer": [10, 20, 30],
                     "fix_recon_var": False,
                 },
             },
         },
         "loader_module_config": {
-            "loader_module_name": "MNIST28",
+            "loader_module_name": "MNIST",
             "loader_module_kwargs": {
                 "batch_size": 32,
                 "auto": True,
@@ -47,7 +47,7 @@ if __name__ == "__main__":
             "accelerator": "gpu",
             "devices": 1,
             "max_epochs": 10,
-            "log_every_n_steps": 10,
+            "log_every_n_steps": 1,
         },
 
         "latents_visualization": True,
