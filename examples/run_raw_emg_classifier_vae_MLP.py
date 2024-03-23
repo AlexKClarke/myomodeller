@@ -1,7 +1,8 @@
-"""Example of training a 2D convolutional neural network to autoencode
-8x8 MNIST images"""
+"""Example of training a 1D convolutional neural network to learn a classifier
+ on MU labelled EMG"""
 
 import os, sys
+from ray import tune
 
 if os.path.basename(os.getcwd()) == "examples":
     os.chdir("..")
@@ -14,30 +15,35 @@ if __name__ == "__main__":
     # at run time. The training module will look in the loader_modules
     # and update_modules __init__.py for the named modules and then pass
     training_module_config = {
-        "log_name": "mnist_vae_MLP",
+        "log_name": "raw_emg_classifier_MLP",
         "update_module_config": {
             "update_module_name": "VariationalAutoencoder",
             "update_module_kwargs": {
                 "optimizer": "AdamW",
-                "optimizer_kwargs": {"lr": 0.001},
-                "beta_step": 1e-2,
+                "optimizer_kwargs": {"lr": 0.01},
+                "beta_step": 2.0e-2,
                 "max_beta": 1.0,
             },
-            "maximize_val_target": False,
+            "maximize_val_target": True,
             "network_config": {
                 "network_name": "vae.MLPVariationalAutoencoder",
                 "network_kwargs": {
-                    "latent_dim": 3,
-                    "out_chans_per_layer": [256, 128],
+                    "latent_dim": 2,
+                    "out_chans_per_layer": [1024, 512, 128, 64, 32],
                     "fix_recon_var": False,
                 },
             },
         },
         "loader_module_config": {
-            "loader_module_name": "MNIST",
+            "loader_module_name": "RawEMGLabelled",
             "loader_module_kwargs": {
+                "file_path": "emg_data_folder/gesture_set_1",
+                "test_fraction": 0.1, # of whole dataset
+                "val_fraction": 0.03, # of test set
+                "group_size": 1,
                 "batch_size": 32,
-                "auto": True,
+                "one_hot_labels": False,
+                "shuffle_data": True,
                 "flatten_input": True,
             },
         },
@@ -45,7 +51,7 @@ if __name__ == "__main__":
             "accelerator": "gpu",
             "devices": 1,
             "max_epochs": 20,
-            "log_every_n_steps": 1,
+            "log_every_n_steps": 10,
         },
 
         "latents_visualization": True,
@@ -57,12 +63,3 @@ if __name__ == "__main__":
 
     # Train the model and pass the results to tensorboard
     training_module.train()
-
-
-
-    '''"trainer_kwargs": {
-        "accelerator": "cpu",
-        "devices": 1,
-        "max_epochs": 10,
-        "log_every_n_steps": 1,
-    },'''

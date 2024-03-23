@@ -1,7 +1,6 @@
 from sklearn.datasets import load_digits
 from torch.nn.functional import one_hot
 import numpy as np
-import torch
 
 from training import LoaderModule
 from loader_modules.utils import (
@@ -24,29 +23,23 @@ class MNIST(LoaderModule):
         auto: bool = False,
         one_hot_labels: bool = False,
         flatten_input: bool = False,
-        train_images: torch.int32 = None,
-        train_labels: torch.int32 = None,
-        val_images: torch.int32 = None,
-        val_labels: torch.int32 = None,
-        test_images: torch.int32 = None,
-        test_labels: torch.int32 = None,
     ):
         (
-            self.train_images,
-            self.train_labels,
-            self.val_images,
-            self.val_labels,
-            self.test_images,
-            self.test_labels,
+            train_images,
+            train_labels,
+            val_images,
+            val_labels,
+            test_images,
+            test_labels,
         ) = self._get_data(one_hot_labels, flatten_input)
 
         super().__init__(
-            train_data=[self.train_images, self.train_images if auto else self.train_labels],
-            val_data=[self.val_images, self.val_images if auto else self.val_labels],
-            test_data=[self.test_images, self.test_images if auto else self.test_labels],
+            train_data=[train_images, train_images if auto else train_labels],
+            val_data=[val_images, val_images if auto else val_labels],
+            test_data=[test_images, test_images if auto else test_labels],
             batch_size=batch_size,
-            input_shape=self.train_images.shape[1:],
-            output_shape=self.train_images.shape[1:] if auto else self.train_labels.shape[1:],
+            input_shape=train_images.shape[1:],
+            output_shape=train_images.shape[1:] if auto else train_labels.shape[1:],
         )
 
     def _get_data(self, one_hot_labels: bool = False, flatten_input: bool = False):
@@ -92,11 +85,6 @@ class MNIST(LoaderModule):
             ((images - mean) / std)
             for images in [train_images, val_images, test_images]
         ]
-
-        print('Train size: ', np.shape(train_images)[0])
-        print('Test size: ', np.shape(test_images)[0])
-        print('Validation size: ', np.shape(val_images)[0])
-        print('\n\n')
 
         return (
             train_images,

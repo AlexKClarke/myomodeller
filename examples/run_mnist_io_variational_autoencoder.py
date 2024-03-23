@@ -29,12 +29,11 @@ if __name__ == "__main__":
                         "optimizer_kwargs": {"lr": 0.01},
                     },
                 },
-                "starting_beta": 0.0,
                 "beta_step": 1e-2,
-                "max_beta": 1.0,
-                #"n_steps_per_switch": 5,
-                "network_training_steps": [10, 5],
-                "n_samples_in_aux": 64,
+                "max_beta": 1,
+                "n_steps_per_switch": 5,
+                "network_training_steps": [20, 10],
+                "n_samples_in_aux": 32,
             },
             "maximize_val_target": False,
             "network_config": {
@@ -44,8 +43,8 @@ if __name__ == "__main__":
                     0: {
                         "network_name": "vae.MLPVariationalAutoencoder",
                         "network_kwargs": {
-                            "latent_dim": 2,
-                            "out_chans_per_layer": [16, 16, 4],
+                            "latent_dim": 5,
+                            "out_chans_per_layer": [256, 128, 64],
                             "fix_recon_var": False,
                         },
                     },
@@ -53,7 +52,7 @@ if __name__ == "__main__":
                     1: {
                         "network_name": "blocks.MLPBlock",
                         "network_kwargs": {
-                            "input_shape": [2],
+                            "input_shape": [5],
                             "output_shape": [1],
                             "out_chans_per_layer": [8, 8],
                             "output_activation": "Sigmoid",
@@ -65,10 +64,9 @@ if __name__ == "__main__":
         "loader_module_config": {
             "loader_module_name": "MNIST28",
             "loader_module_kwargs": {
-                "batch_size": 128,
+                "batch_size": 32,
                 "auto": True,
                 "flatten_input": True,
-                "downsample_pooling_size": (1, 1)
             },
         },
 

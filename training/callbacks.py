@@ -12,8 +12,7 @@ class TrainingEpochEnd(Callback):
                 else:
                     results[k].append(v)
 
-        #[module.log(k, torch.stack(v).mean()) for k, v in results.items()] # changed as it would give a type error after some epochs... expects float, yet sometimes torch.stack() returned long
-        [module.log(k, torch.stack(v).float().mean()) for k, v in results.items()]
+        [module.log(k, torch.stack(v).mean()) for k, v in results.items()]
         module.training_step_outputs.clear()
 
 

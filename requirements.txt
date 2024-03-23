@@ -10,3 +10,4 @@ pandas
 tensorboard
 tensorboardX
 matplotlib
+torchsummary
