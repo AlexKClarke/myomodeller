@@ -107,6 +107,10 @@ class MLPVariationalAutoencoder(nn.Module):
             self.recon_log_var.exp().unsqueeze(0).tile((recon_mean.shape[0], 1, 1, 1))
         )
 
+        # Makes sure that output shape is of the right type (inference module was giving an issue)
+        if not isinstance(self.output_shape, torch.Size):
+            self.output_shape = torch.Size(self.output_shape)
+
         # Need to unflatten the batch and draws and then remove draws if 2D
         recon_mean = recon_mean.reshape((z_shape[0], z_shape[1]) + self.output_shape)
         recon_var = recon_var.reshape((z_shape[0], z_shape[1]) + self.output_shape)
@@ -236,6 +240,10 @@ class Conv1dVariationalAutoencoder(nn.Module):
             self.recon_log_var.exp().unsqueeze(0).tile((recon_mean.shape[0], 1, 1, 1))
         )
 
+        # Makes sure that output shape is of the right type (inference module was giving an issue)
+        if not isinstance(self.output_shape, torch.Size):
+            self.output_shape = torch.Size(self.output_shape)
+
         # Need to unflatten the batch and draws and then remove draws if 2D
         recon_mean = recon_mean.reshape((z_shape[0], z_shape[1]) + self.output_shape)
         recon_var = recon_var.reshape((z_shape[0], z_shape[1]) + self.output_shape)
@@ -338,7 +346,7 @@ class Conv2dVariationalAutoencoder(nn.Module):
 
         # PRINT MODEL ARCHITECTURE:
         print('\n\nENCODER ARCHITECTURE')
-        summary(self.encoder, input_shape)
+        summary(self.encoder, [input_shape])
 
         print('\n\nDECODER ARCHITECTURE')
         summary(self.decoder, (torch.randn(1, latent_dim).size()))
@@ -372,6 +380,10 @@ class Conv2dVariationalAutoencoder(nn.Module):
         recon_var = (
             self.recon_log_var.exp().unsqueeze(0).tile((recon_mean.shape[0], 1, 1, 1))
         )
+
+        # Makes sure that output shape is of the right type (inference module was giving an issue)
+        if not isinstance(self.output_shape, torch.Size):
+            self.output_shape = torch.Size(self.output_shape)
 
         # Need to unflatten the batch and draws and then remove draws if 2D
         recon_mean = recon_mean.reshape((z_shape[0], z_shape[1]) + self.output_shape)
@@ -521,6 +533,10 @@ class Conv2d_MLP_VariationalAutoencoder(nn.Module):
         recon_var = (
             self.recon_log_var.exp().unsqueeze(0).tile((recon_mean.shape[0], 1, 1, 1))
         )
+
+        # Makes sure that output shape is of the right type (inference module was giving an issue)
+        if not isinstance(self.output_shape, torch.Size):
+            self.output_shape = torch.Size(self.output_shape)
 
         # Need to unflatten the batch and draws and then remove draws if 2D
         recon_mean = recon_mean.reshape((z_shape[0], z_shape[1]) + self.output_shape)

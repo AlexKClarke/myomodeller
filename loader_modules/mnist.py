@@ -9,11 +9,6 @@ from loader_modules.utils import (
     array_to_tensor,
 )
 
-# to load full mnist dataset
-from sklearn.datasets import fetch_openml
-
-
-
 class MNIST(LoaderModule):
     """Loader module that retrieves sklearn's MNIST set"""
 

@@ -14,7 +14,7 @@ if __name__ == "__main__":
     # at run time. The training module will look in the loader_modules
     # and update_modules __init__.py for the named modules and then pass
     training_module_config = {
-        "log_name": "mnist_vae_MLP",
+        "log_name": "mnist28_vae_MLP",
         "update_module_config": {
             "update_module_name": "VariationalAutoencoder",
             "update_module_kwargs": {
@@ -27,8 +27,8 @@ if __name__ == "__main__":
             "network_config": {
                 "network_name": "vae.MLPVariationalAutoencoder",
                 "network_kwargs": {
-                    "latent_dim": 3,
-                    "out_chans_per_layer": [256, 128],
+                    "latent_dim": 4,
+                    "out_chans_per_layer": [32, 32],
                     "fix_recon_var": False,
                 },
             },
@@ -44,7 +44,7 @@ if __name__ == "__main__":
         "trainer_kwargs": {
             "accelerator": "gpu",
             "devices": 1,
-            "max_epochs": 20,
+            "max_epochs": 100,
             "log_every_n_steps": 1,
         },
 
@@ -58,11 +58,3 @@ if __name__ == "__main__":
     # Train the model and pass the results to tensorboard
     training_module.train()
 
-
-
-    '''"trainer_kwargs": {
-        "accelerator": "cpu",
-        "devices": 1,
-        "max_epochs": 10,
-        "log_every_n_steps": 1,
-    },'''

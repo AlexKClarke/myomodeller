@@ -59,12 +59,3 @@ if __name__ == "__main__":
 
     # Train the model and pass the results to tensorboard
     training_module.train()
-
-
-
-    '''"trainer_kwargs": {
-        "accelerator": "cpu",
-        "devices": 1,
-        "max_epochs": 10,
-        "log_every_n_steps": 1,
-    },'''

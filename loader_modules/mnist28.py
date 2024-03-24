@@ -47,6 +47,7 @@ class MNIST28(LoaderModule):
         print('Loading MNIST28 digits...')
 
         mnist = fetch_openml('mnist_784')
+        np.random.seed(42)
         index_number = np.random.permutation(70000)
         x1, y1 = mnist.data.loc[index_number], mnist.target.loc[index_number]
         x1.reset_index(drop=True, inplace=True)
