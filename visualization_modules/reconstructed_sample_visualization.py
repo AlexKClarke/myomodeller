@@ -18,41 +18,36 @@ class VisualizeReconstructedSamples():
 
     def __init__(
         self,
-        data_batch,
-        labels_batch,
+        data_test,
+        labels_test,
         trainer_module,
         loader_module,
         config,
     ):
-        self.data_batch = data_batch
-        self.labels_batch = labels_batch
+        self.data_test = data_test
+        self.labels_test = labels_test
         self.trainer_module = trainer_module
         self.loader_module = loader_module
         self.config = config
 
     def plot_reconstructed_input(self):
-        '''if self.config["loader_module_config"]["loader_module_kwargs"]["flatten_input"] == True:
-            self.data_batch = self.data_batch.flatten()'''
-        original_data, reconstructed_data = self.batch_inference(self.data_batch, self.trainer_module)
 
-        '''if self.config["loader_module_config"]["loader_module_kwargs"]["flatten_input"] == True:
-
-            self.data_batch = self.data_batch.flatten()'''
+        original_data, reconstructed_data = self.batch_inference(self.data_test, self.trainer_module)
 
         N = original_data.size(0)
-        random_numbers = torch.randint(low=0, high=N, size=(10,))
+        random_numbers = torch.randint(low=0, high=N, size=(2,))
         original_data = original_data[random_numbers].squeeze()
         reconstructed_data = reconstructed_data[random_numbers].squeeze()
 
-        fig, axs = plt.subplots(10, 2, figsize=(10, 20))
+        fig, axs = plt.subplots(2, 2, figsize=(10, 8))
 
         # Plot images from the first tensor in the first column
-        for i in range(10):
+        for i in range(2):
             axs[i, 0].imshow(original_data[i].detach().numpy(), cmap='gray')  # Assuming grayscale images
             axs[i, 0].set_title(f'Original image - Sample {i + 1}')
             axs[i, 0].axis('off')
         # Plot images from the second tensor in the second column
-        for i in range(10):
+        for i in range(2):
             axs[i, 1].imshow(reconstructed_data[i].detach().numpy(), cmap='gray')  # Assuming grayscale images
             axs[i, 1].set_title(f'Reconstructed image - Sample {i + 1}')
             axs[i, 1].axis('off')
@@ -65,8 +60,8 @@ class VisualizeReconstructedSamples():
 
 
 
-    def batch_inference(self, data_batch, trainer_module):
-        model = trainer_module.model
+    def batch_inference(self, data_batch, model):
+
         if self.config["update_module_config"]["update_module_name"] == 'IOVariationalAutoencoder':
             vae_model = model.network[0]
         else:
