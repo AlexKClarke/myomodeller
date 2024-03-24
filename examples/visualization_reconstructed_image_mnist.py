@@ -32,7 +32,7 @@ if __name__ == "__main__":
     # method. This returns the update module with the checkpoint network
     # weights replacing the original random weights.
 
-    path = os.path.join("logs/mnist_vae/version_0", "config.json")
+    path = os.path.join("logs/mnist_vae/version_1", "config.json")
     inference_module = TrainingModule(path).get_inference_module()
 
     # We need data preprocessed in the same way as the training data
@@ -47,12 +47,3 @@ if __name__ == "__main__":
     # PLOT ORIGINAL AND RECONSTRUCTED SAMPLES
     reconstructed_image_visualizer = VisualizeReconstructedSamples(data_test=test_images, labels_test=test_labels, trainer_module=inference_module, loader_module=loader_module, config=config)
     reconstructed_image_visualizer.plot_reconstructed_input()
-
-
-
-    '''import matplotlib.pyplot as plt
-
-    pred = prediction[50, :].detach().numpy().reshape(8, 8)
-
-    plt.imshow(pred)
-    plt.show()'''
