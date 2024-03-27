@@ -58,7 +58,6 @@ if __name__ == "__main__":
                             "input_shape": [2],
                             "output_shape": [1],
                             "out_chans_per_layer": [32, 32],
-
                             "output_activation": "Sigmoid",
                         },
                     },
@@ -82,8 +81,8 @@ if __name__ == "__main__":
         "trainer_kwargs": {
             "accelerator": "gpu",
             "devices": 1,
-            "max_epochs": 500,
-            "log_every_n_steps": 10,
+            "max_epochs": 30,
+            "log_every_n_steps": 30,
         },
     }
 

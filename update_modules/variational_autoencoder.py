@@ -42,7 +42,7 @@ class VariationalAutoencoder(UpdateModule):
         recon_mean, recon_var = self.network.decode(z)
 
         # Create distributions
-        posterior_dist = td.MultivariateNormal(z_mean, z_var.diag_embed())
+        posterior_dist = td.MultivariateNormal(z_mean, z_var)
         eye = (
             torch.eye(z_var.shape[1], dtype=z_var.dtype, device=z_var.device)
             .unsqueeze(0)

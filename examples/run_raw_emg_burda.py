@@ -1,8 +1,7 @@
-"""Example of training a 1D convolutional neural network to learn a classifier
- on MU labelled EMG"""
+"""Example of training a 2D convolutional neural network to autoencode 
+8x8 MNIST images"""
 
 import os, sys
-from ray import tune
 
 if os.path.basename(os.getcwd()) == "examples":
     os.chdir("..")
@@ -15,17 +14,18 @@ if __name__ == "__main__":
     # at run time. The training module will look in the loader_modules
     # and update_modules __init__.py for the named modules and then pass
     training_module_config = {
-        "log_name": "std_emg",
+        "log_name": "burda_emg",
         "update_module_config": {
-            "update_module_name": "VariationalAutoencoder",
+            "update_module_name": "BurdaVariationalAutoencoder",
             "update_module_kwargs": {
                 "optimizer": "AdamW",
                 "optimizer_kwargs": {"lr": 0.001},
                 "starting_beta": 0.0,
-                "beta_step": 1.0e-2,
+                "beta_step": 1e-2,
                 "max_beta": 1.0,
+                "burda_samples": 32,
             },
-            "maximize_val_target": True,
+            "maximize_val_target": False,
             "network_config": {
                 "network_name": "vae.Conv2d_MLP_VariationalAutoencoder",
                 "network_kwargs": {
@@ -44,23 +44,21 @@ if __name__ == "__main__":
             "loader_module_kwargs": {
                 "file_path": "emg_data_folder/5_finger_pressure/teo/flexion/session_1",
                 "test_fraction": 0.1, # of whole dataset
-                "val_fraction": 0.05, # of test set
+                "val_fraction": 0.03, # of test set
                 "group_size": 1,
                 "batch_size": 32,
                 "one_hot_labels": False,
-                "shuffle_data": True,
+                "shuffle_data": False,
                 "flatten_input": False,
-                "rectify_emg": False,
+                "rectify_emg": True,
             },
         },
         "trainer_kwargs": {
             "accelerator": "gpu",
             "devices": 1,
             "max_epochs": 30,
-            "log_every_n_steps": 500,
+            "log_every_n_steps": 30,
         },
-
-        "latents_visualization": True,
     }
 
     # Once the config is defined it can be passed to an instance of the
