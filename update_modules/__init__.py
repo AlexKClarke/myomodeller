@@ -10,3 +10,4 @@ from update_modules.deep_metric_learner import DeepMetricLearner
 from update_modules.variational_autoencoder import VariationalAutoencoder
 from update_modules.implicit_optimal_vae import IOVariationalAutoencoder
 from update_modules.burda_vae import BurdaVariationalAutoencoder
+

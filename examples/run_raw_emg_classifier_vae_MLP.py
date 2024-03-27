@@ -1,7 +1,8 @@
-"""Example of training a 2D convolutional neural network to autoencode 
-8x8 MNIST images"""
+"""Example of training a 1D convolutional neural network to learn a classifier
+ on MU labelled EMG"""
 
 import os, sys
+from ray import tune
 
 if os.path.basename(os.getcwd()) == "examples":
     os.chdir("..")
@@ -14,35 +15,45 @@ if __name__ == "__main__":
     # at run time. The training module will look in the loader_modules
     # and update_modules __init__.py for the named modules and then pass
     training_module_config = {
-        "log_name": "mnist_autoencoder",
+        "log_name": "raw_emg_classifier_MLP",
         "update_module_config": {
-            "update_module_name": "SparseAutoencoder",
+            "update_module_name": "VariationalAutoencoder",
             "update_module_kwargs": {
                 "optimizer": "AdamW",
-                "optimizer_kwargs": {"lr": 0.001},
-                "l1_loss_coeff": 0.1,
+                "optimizer_kwargs": {"lr": 0.01},
+                "beta_step": 2.0e-2,
+                "max_beta": 1.0,
             },
             "maximize_val_target": True,
             "network_config": {
-                "network_name": "sparse.Conv2dSparseAutoencoder",
+                "network_name": "vae.MLPVariationalAutoencoder",
                 "network_kwargs": {
-                    "input_shape": [1, 28, 28],
-                    "output_shape": [1, 28, 28],
-                    "sparse_dim": 2,
-                    "out_chans_per_layer": [4, 8],
+                    "latent_dim": 2,
+                    "out_chans_per_layer": [1024, 512, 128, 64, 32],
+                    "fix_recon_var": False,
                 },
             },
         },
         "loader_module_config": {
-            "loader_module_name": "MNIST28",
-            "loader_module_kwargs": {"batch_size": 64, "auto": True},
+            "loader_module_name": "RawEMGLabelled",
+            "loader_module_kwargs": {
+                "file_path": "emg_data_folder/gesture_set_1",
+                "test_fraction": 0.1, # of whole dataset
+                "val_fraction": 0.03, # of test set
+                "group_size": 1,
+                "batch_size": 32,
+                "one_hot_labels": False,
+                "shuffle_data": True,
+                "flatten_input": True,
+            },
         },
         "trainer_kwargs": {
             "accelerator": "gpu",
             "devices": 1,
-            "max_epochs": 10,
+            "max_epochs": 20,
             "log_every_n_steps": 10,
         },
+
         "latents_visualization": True,
     }
 

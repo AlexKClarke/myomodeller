@@ -9,7 +9,12 @@ from loader_modules.utils import (
     array_to_tensor,
 )
 
-class MNIST(LoaderModule):
+# to load full mnist dataset
+from sklearn.datasets import fetch_openml
+
+
+
+class MNIST28(LoaderModule):
     """Loader module that retrieves sklearn's MNIST set"""
 
     def __init__(
@@ -39,12 +44,22 @@ class MNIST(LoaderModule):
 
     def _get_data(self, one_hot_labels: bool = False, flatten_input: bool = False):
         """Loads MNIST digits from scikit.datasets"""
-        print('Loading MNIST digits...')
+        print('Loading MNIST28 digits...')
 
-        # sklearn flattens the images for some reason so also need to reshape
-        images, labels = load_digits(return_X_y=True)
-        images, labels = images.astype("float32"), labels.astype("int64")
-        images = images.reshape((images.shape[0], 1, 8, 8))
+        mnist = fetch_openml('mnist_784')
+        np.random.seed(42)
+        index_number = np.random.permutation(70000)
+        x1, y1 = mnist.data.loc[index_number], mnist.target.loc[index_number]
+        x1.reset_index(drop=True, inplace=True)
+        y1.reset_index(drop=True, inplace=True)
+        '''x_train, x_test = x1[:55000], x1[55000:]
+        y_train, y_test = y1[:55000], y1[55000:]'''
+
+        x1 = np.array(x1)
+        y1 = np.array(y1)
+        images, labels = x1.astype("float32"), y1.astype("int64")
+        images = images.reshape((images.shape[0], 1, 28, 28))
+
 
         # Split out train, val and test sets
         train_data, test_data = split_array_by_indices(

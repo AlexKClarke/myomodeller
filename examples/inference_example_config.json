@@ -35,5 +35,5 @@
             "batch_size": 64
         }
     },
-    "ckpt_path": "examples\\inference_example_checkpoint.ckpt"
+    "ckpt_path": "examples/inference_example_checkpoint.ckpt"
 }

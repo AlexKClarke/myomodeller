@@ -2,6 +2,7 @@ from typing import Sequence, Union, List, Tuple, Iterable, cast
 import torch
 import torch.nn as nn
 from networks.utils import Reshape
+import torch.nn.init as init
 
 
 class ConvTranspose1dBlock(nn.Module):
@@ -248,7 +249,6 @@ class ConvTranspose2dBlock(nn.Module):
         for layer in self.block:
             x = layer(x)
         return x
-
 
 class ConvTranspose2d_MLP_Block(nn.Module):
     def __init__(

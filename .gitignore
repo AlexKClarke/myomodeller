@@ -9,8 +9,13 @@ original_data.pkl
 /examples/run_mnist_variational_autoencoder_MPL.py
 /examples/run_mnist_variational_autoencoder_CNN.py
 /examples/run_raw_emg_CNN_MLP.py
-/loader_modules/__pycache__
-/networks/__pycache__
-/update_modules/__pycache__
-/training/__pycache__
+/visualization_modules/__pycache__/
+/update_modules/__pycache__/
+/training/__pycache__/
+/networks/__pycache__/
+/loader_modules/__pycache__/
 test_MPS.py
+/mps_test.py
+/venv
+
+
