@@ -3,3 +3,8 @@
 /logs
 /venv
 /.idea
+/visualization_modules/__pycache__/
+/update_modules/__pycache__/
+/training/__pycache__/
+/networks/__pycache__/
+/loader_modules/__pycache__/
