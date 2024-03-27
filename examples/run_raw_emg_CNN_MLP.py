@@ -22,7 +22,7 @@ if __name__ == "__main__":
                 "optimizer": "AdamW",
                 #"optimizer_kwargs": {"lr": 0.01},
                 "beta_step": 1.0e-2,
-                "max_beta": 5.0,
+                "max_beta": 1.0,
             },
             "maximize_val_target": True,
             "network_config": {
@@ -55,7 +55,7 @@ if __name__ == "__main__":
         "trainer_kwargs": {
             "accelerator": "gpu",
             "devices": 1,
-            "max_epochs": 10,
+            "max_epochs": 30,
             "log_every_n_steps": 500,
         },
 
